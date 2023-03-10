@@ -15,6 +15,7 @@ type Polls struct {
 func (p *Polls) Read() int {
 	oldP := p.PollCount
 	p.PollCount++
+	//Checks for overflow
 	if p.PollCount > oldP {
 		return 0
 	} else {

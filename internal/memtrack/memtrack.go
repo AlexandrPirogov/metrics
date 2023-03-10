@@ -11,10 +11,6 @@ import (
 	"time"
 )
 
-//For a while
-
-const addr = "http://localhost:8000"
-
 // Collects all types of metrics
 // Reads and updates metrics
 type memtracker struct {
@@ -33,6 +29,8 @@ type httpMemTracker struct {
 // readInterval -- how often read metrics
 //
 // sendInterval -- how often send metrics to server
+//
+// WARNING: Race condition appears
 func (h httpMemTracker) ReadAndSend(readInterval time.Duration, sendInterval time.Duration) {
 	readTicker := time.NewTicker(readInterval)
 	sendTicker := time.NewTicker(sendInterval)
@@ -57,6 +55,7 @@ func (h httpMemTracker) send() {
 		metricVal := reflect.ValueOf(metric).Elem()
 		for i := 0; i < metricVal.NumField(); i++ {
 			url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, metricVal.Field(i).Type().Name(), metricVal.Field(i))
+			log.Printf("Sending metrics to: %s\n", url)
 			_, err := h.client.Post(url, "text/plain", nil)
 			if err != nil {
 				log.Print(err)
