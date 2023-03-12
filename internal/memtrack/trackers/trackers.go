@@ -7,6 +7,8 @@ import (
 	"memtracker/internal/memtrack/metrics"
 )
 
+// New Creates new instance of MetricTrackers
+//
 // Pre-cond:
 //
 // Post-cond: Creates new instance of MetricsTracker
@@ -28,7 +30,7 @@ type MetricsTracker struct {
 	Metrics []metrics.Metricable
 }
 
-// Pre-cond:
+// InvokeTrackers Pre-cond:
 //
 // Post-cond: requests measures to update own metrics.
 // returns 0 if success otherwise we can return error_code

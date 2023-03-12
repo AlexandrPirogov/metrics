@@ -24,6 +24,8 @@ type Metric struct {
 	Val  float64
 }
 
+// InsertMetric creates and insert metrics in DB
+//
 // Pre-cond: given mtype, name and val of metric.
 // mtype and name should be one of from package metrics.
 //

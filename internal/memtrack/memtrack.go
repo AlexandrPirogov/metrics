@@ -71,7 +71,7 @@ func (h httpMemTracker) update() {
 	h.MetricsContainer.InvokeTrackers()
 }
 
-// Creates new instance of HttpMemTracker
+// NewHttpMemTracker Creates new instance of HttpMemTracker
 //
 // Pre-cond: Given client instance and host = addr:port
 //

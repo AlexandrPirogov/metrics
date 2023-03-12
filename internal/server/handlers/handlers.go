@@ -10,11 +10,6 @@ import (
 	"strings"
 )
 
-// Handler func
-func HelloWorld(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello"))
-}
-
 func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		params := strings.Split(r.URL.Path, "/")
