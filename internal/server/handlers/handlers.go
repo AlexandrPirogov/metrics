@@ -7,39 +7,32 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
-	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func UpdateHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		params := strings.Split(r.URL.Path, "/")
-		if len(params) >= 5 {
-			if isUpdatePathCorrect(params) == 0 {
-				mtype := params[2]
-				mname := params[3]
-				val := params[4]
-				db.Write(mtype, mname, val)
-				w.Header().Set("Content-Type", "text/plain")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(""))
-			} else {
-				log.Printf("Code: %v\n", isUpdatePathCorrect(params))
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+	w.Header().Set("Content-Type", "text/plain")
+	mtype := chi.URLParam(r, "mtype")
+	mname := chi.URLParam(r, "mname")
+	val := chi.URLParam(r, "val")
+	log.Printf("type: %s  name:%s  val:%s\n", mtype, mname, val)
+	if mtype == "" || mname == "" || val == "" {
+		w.WriteHeader(http.StatusNotFound)
 	} else {
-		w.WriteHeader(http.StatusInternalServerError)
+		code := isUpdatePathCorrect(mtype, mname, val)
+		log.Printf("Correct metrics %d\n", code)
+		if code == 0 {
+			db.Write(mtype, mname, val)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(""))
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
 	}
 }
 
-func isUpdatePathCorrect(path []string) int {
-	log.Printf("path: %v\n", path)
-	metricType := path[2]
-	metricName := path[3]
-	metricVal := path[4]
-
+func isUpdatePathCorrect(mtype, mname, mval string) int {
 	var gauges = metrics.MemStats{}
 	var counters = metrics.Polls{}
 
@@ -48,12 +41,12 @@ func isUpdatePathCorrect(path []string) int {
 	mTypes[counters.String()] = true
 
 	// If given incorrect path
-	if _, ok := mTypes[metricType]; !ok {
-		log.Printf("Given metric type %s not exists!", path[1])
+	if _, ok := mTypes[mtype]; !ok {
+		log.Printf("Given metric type %s not exists!", mtype)
 		return 1
 	}
 
-	if metricsCheck(&gauges, metricName, metricVal) == 0 || metricsCheck(&counters, metricName, metricVal) == 0 {
+	if metricsCheck(&gauges, mname, mval) == 0 || metricsCheck(&counters, mname, mval) == 0 {
 		return 0
 	}
 	return -1
