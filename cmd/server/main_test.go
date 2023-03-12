@@ -25,6 +25,8 @@ type response struct {
 const host string = "http://localhost:8080"
 const path string = "/update"
 
+// #TODO run get method
+
 func TestUpdateHandlerIncorrectPath(t *testing.T) {
 	expectFail := response{http.StatusNotFound, "text/plain; charset=utf-8", "404 page not found\n"}
 	incorrectPaths := []string{
