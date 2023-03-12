@@ -17,3 +17,8 @@ func Write(mtype, mname, val string) int {
 	}
 	return DB.InsertMetric(mtype, mname, value)
 }
+
+// Returns
+func Read() string {
+	return DB.Select()
+}
