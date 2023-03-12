@@ -11,7 +11,7 @@ var DB *pidb.DB = &pidb.DB{
 
 // Saves metric in DB
 func Write(mtype, mname, val string) int {
-	value, err := strconv.ParseFloat(val, 10)
+	value, err := strconv.ParseFloat(val, 64)
 	if err != nil {
 		return -1
 	}

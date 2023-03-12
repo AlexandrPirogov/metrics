@@ -17,6 +17,7 @@ func TestInit(t *testing.T) {
 	assert.Equal(t, len(db.Documents), 0, "New created DB must be empty")
 }
 
+// Test for saving correct gauges metrics
 func TestWriteCorrectGaugesMetrics(t *testing.T) {
 	db := DB{
 		make([]Document, 0),
@@ -29,11 +30,12 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 		beforeInsert := len(db.Documents)
 		insertStatus := db.InsertMetric(gauges.String(), gaugesType.Field(i).Name, 0)
 		afterInsert := len(db.Documents)
-		assert.Equal(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
+		assert.Equal(t, 0, insertStatus, "Can't insert correct gauge metric!\n")
 		assert.Greater(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
 	}
 }
 
+// Test for saving incorrect gauges metrics
 func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 	db := DB{
 		make([]Document, 0),
@@ -52,6 +54,7 @@ func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 	}
 }
 
+// Test for saving correct counters metrics
 func TestWriteCounterMetrics(t *testing.T) {
 	db := DB{
 		make([]Document, 0),
@@ -66,5 +69,24 @@ func TestWriteCounterMetrics(t *testing.T) {
 		afterInsert := len(db.Documents)
 		assert.Equal(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
 		assert.Greater(t, afterInsert, beforeInsert, "After failed insert db size should be not be modified!")
+	}
+}
+
+// Test for saving incorrect counters metrics
+func TestWriteIncorrectCountersMetrics(t *testing.T) {
+	db := DB{
+		make([]Document, 0),
+	}
+	var counters metrics.Polls = metrics.Polls{}
+	countersType := reflect.TypeOf(counters)
+
+	for i := 0; i < countersType.NumField(); i++ {
+		beforeInsert := len(db.Documents)
+		modifiedType := " " + counters.String() + " "
+		modifiedName := " " + countersType.Field(i).Name + " "
+		insertStatus := db.InsertMetric(modifiedType, modifiedName, 0)
+		afterInsert := len(db.Documents)
+		assert.NotEqual(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
+		assert.Equal(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
 	}
 }

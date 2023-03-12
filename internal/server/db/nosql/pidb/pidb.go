@@ -50,6 +50,7 @@ func (p *DB) insertJSON(mtype, name string, val float64) int {
 		return -1
 	} else {
 		p.Documents = append(p.Documents, json)
+		log.Printf("Successfully saved new Metric. DB holds %d documents \n", len(p.Documents))
 		return 0
 	}
 }

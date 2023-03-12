@@ -76,7 +76,7 @@ func metricsCheck(metric metrics.Metricable, metricName string, metricVal string
 		return 1
 	}
 
-	if _, err := strconv.Atoi(metricVal); err != nil {
+	if _, err := strconv.ParseFloat(metricVal, 64); err != nil {
 		log.Printf("Error: %v", err)
 		return 2
 	}
