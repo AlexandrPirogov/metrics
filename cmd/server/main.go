@@ -1,7 +1,7 @@
 package main
 
 import (
-	"memtracker/internal/handlers"
+	"memtracker/internal/server/handlers"
 	"net/http"
 )
 

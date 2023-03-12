@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/server/db"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -19,6 +20,10 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		params := strings.Split(r.URL.Path, "/")
 		if len(params) >= 5 {
 			if isUpdatePathCorrect(params) == 0 {
+				mtype := params[2]
+				mname := params[3]
+				val := params[4]
+				db.Write(mtype, mname, val)
 				w.Header().Set("Content-Type", "text/plain")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(""))

@@ -3,8 +3,8 @@ package main_test
 import (
 	"fmt"
 	"io"
-	"memtracker/internal/handlers"
 	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/server/handlers"
 	"memtracker/internal/tests"
 	"net/http"
 	"net/http/httptest"
