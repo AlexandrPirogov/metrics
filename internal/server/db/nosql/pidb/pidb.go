@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"memtracker/internal/memtrack/metrics"
+	"time"
 )
 
 // Local db to imitate storage of metrics
@@ -19,9 +20,18 @@ type Document struct {
 
 // Metrics to hold
 type Metric struct {
+	Time time.Time
 	Name string
 	Type string
 	Val  float64
+}
+
+func (p DB) Select() string {
+	res := ""
+	for _, doc := range p.Documents {
+		res += string(doc.JSON) + "\n"
+	}
+	return res
 }
 
 // InsertMetric creates and insert metrics in DB
@@ -62,7 +72,7 @@ func (p *DB) insertJSON(mtype, name string, val float64) int {
 //
 // Post-condition: creats new Document instance or returns error
 func (p DB) newJSON(mtype, name string, val float64) (Document, error) {
-	metric := Metric{name, mtype, val}
+	metric := Metric{time.Now(), name, mtype, val}
 	js, err := json.Marshal(metric)
 	if err != nil {
 		log.Print(err)
