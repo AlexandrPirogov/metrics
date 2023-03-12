@@ -56,10 +56,11 @@ func (h httpMemTracker) send() {
 		for i := 0; i < metricVal.NumField(); i++ {
 			url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, metricVal.Field(i).Type().Name(), metricVal.Field(i))
 			log.Printf("Sending metrics to: %s\n", url)
-			_, err := h.client.Post(url, "text/plain", nil)
+			resp, err := h.client.Post(url, "text/plain", nil)
 			if err != nil {
 				log.Print(err)
 			}
+			defer resp.Body.Close()
 		}
 
 	}
