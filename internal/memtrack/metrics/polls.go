@@ -9,7 +9,7 @@ type Polls struct {
 	PollCount PollCount
 }
 
-// Increasing PollCount by 1
+// Read Increasing PollCount by 1
 // WARNING: PollCount is not reseting
 // Overflow may appear
 func (p *Polls) Read() int {

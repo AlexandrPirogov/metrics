@@ -124,7 +124,10 @@ type MemStats struct {
 	RandomValue   RandomValue
 }
 
+// Read updates memory stats from runtime package
+//
 // Pre-cond:
+//
 // Post-cond: metrics updated using package runtime
 // Reflect could be used here
 func (m *MemStats) Read() int {
