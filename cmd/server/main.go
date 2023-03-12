@@ -12,7 +12,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Post("/update/{mtype}/{mname}/{val}", handlers.UpdateHandler)
-	r.Get("/", http.NotFound)
+	r.Get("/", handlers.GetDocuments)
 	server := &http.Server{
 		Addr:    ":8080",
 		Handler: r,
