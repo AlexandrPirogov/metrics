@@ -1,4 +1,4 @@
-// Provides wrapped metrics into structs.
+// metrics Provides wrapped metrics into structs.
 //
 // There are two types of metrics: gauges and polls
 //
@@ -20,7 +20,7 @@ type Metricable interface {
 }
 
 func IsMetricCorrect(mtype, name string) int {
-	var metrics []Metricable = []Metricable{
+	var metrics = []Metricable{
 		&MemStats{},
 		&Polls{},
 	}

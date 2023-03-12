@@ -103,8 +103,8 @@ func runPost(url string) *httptest.ResponseRecorder {
 }
 
 func CorrectPaths() []string {
-	var gauges metrics.MemStats = metrics.MemStats{}
-	var paths []string = make([]string, 0)
+	var gauges = metrics.MemStats{}
+	var paths = make([]string, 0)
 
 	gaugeVal := reflect.ValueOf(gauges)
 	for i := 0; i < gaugeVal.NumField(); i++ {

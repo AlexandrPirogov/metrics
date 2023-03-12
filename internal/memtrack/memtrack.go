@@ -76,7 +76,7 @@ func (h httpMemTracker) update() {
 // Pre-cond: Given client instance and host = addr:port
 //
 // Post-cond: returns new instance of httpMemTracker
-func NewHttpMemTracker(client http.Client, host string) httpMemTracker {
+func NewHTTPMemTracker(client http.Client, host string) httpMemTracker {
 	return httpMemTracker{
 		Host:       host,
 		memtracker: memtracker{trackers.New()},

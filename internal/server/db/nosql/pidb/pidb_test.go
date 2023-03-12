@@ -23,7 +23,7 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 		make([]Document, 0),
 	}
 
-	var gauges metrics.MemStats = metrics.MemStats{}
+	var gauges = metrics.MemStats{}
 	gaugesType := reflect.TypeOf(gauges)
 
 	for i := 0; i < gaugesType.NumField(); i++ {
@@ -40,7 +40,7 @@ func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 	db := DB{
 		make([]Document, 0),
 	}
-	var gauges metrics.MemStats = metrics.MemStats{}
+	var gauges = metrics.MemStats{}
 	gaugesType := reflect.TypeOf(gauges)
 
 	for i := 0; i < gaugesType.NumField(); i++ {
@@ -60,7 +60,7 @@ func TestWriteCounterMetrics(t *testing.T) {
 		make([]Document, 0),
 	}
 
-	var counters metrics.Polls = metrics.Polls{}
+	var counters = metrics.Polls{}
 	countersType := reflect.TypeOf(counters)
 
 	for i := 0; i < countersType.NumField(); i++ {
@@ -77,7 +77,7 @@ func TestWriteIncorrectCountersMetrics(t *testing.T) {
 	db := DB{
 		make([]Document, 0),
 	}
-	var counters metrics.Polls = metrics.Polls{}
+	var counters = metrics.Polls{}
 	countersType := reflect.TypeOf(counters)
 
 	for i := 0; i < countersType.NumField(); i++ {

@@ -40,10 +40,10 @@ func isUpdatePathCorrect(path []string) int {
 	metricName := path[3]
 	metricVal := path[4]
 
-	var gauges metrics.MemStats = metrics.MemStats{}
-	var counters metrics.Polls = metrics.Polls{}
+	var gauges = metrics.MemStats{}
+	var counters = metrics.Polls{}
 
-	var mTypes map[string]bool = make(map[string]bool)
+	var mTypes = make(map[string]bool)
 	mTypes[gauges.String()] = true
 	mTypes[counters.String()] = true
 
@@ -60,7 +60,7 @@ func isUpdatePathCorrect(path []string) int {
 }
 
 func metricsCheck(metric metrics.Metricable, metricName string, metricVal string) int {
-	var metrics map[string]bool = make(map[string]bool)
+	var metrics = make(map[string]bool)
 	counterVal := reflect.TypeOf(metric).Elem()
 	for i := 0; i < counterVal.NumField(); i++ {
 		metrics[counterVal.Field(i).Name] = true
