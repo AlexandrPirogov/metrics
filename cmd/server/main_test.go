@@ -3,6 +3,7 @@ package main_test
 import (
 	"fmt"
 	"io"
+	"log"
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/server/handlers"
 	"memtracker/internal/tests"
@@ -10,6 +11,9 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type response struct {
@@ -22,19 +26,19 @@ const host string = "http://localhost:8080"
 const path string = "/update"
 
 func TestUpdateHandlerIncorrectPath(t *testing.T) {
-	expectFail := response{500, "", ""}
+	expectFail := response{http.StatusNotFound, "text/plain; charset=utf-8", "404 page not found\n"}
 	incorrectPaths := []string{
-		host + path + "/qwe/asd",
-		host + "/qwe",
-		host + "/A/A/A",
-		host + "/A/B/B/B",
-		host + "/C/B/_/E/W/",
+		path + "/qwe/asd",
+		"/qwe",
+		"/A/A/A",
+		"/A/B/B/B",
+		"/C/B/_/E/W/",
 	}
 
 	for _, url := range incorrectPaths {
 		t.Run(url, func(t *testing.T) {
 			//Running server and executing request
-			res := runPost(url).Result()
+			res := runPost(url)
 
 			//Defering to close body
 			defer res.Body.Close()
@@ -56,7 +60,7 @@ func TestUpdateHandlerIncorrectPath(t *testing.T) {
 	}
 }
 
-func TestUPdateHandlerCorrectPath(t *testing.T) {
+func TestUpdateHandlerCorrectPath(t *testing.T) {
 	expectSucces := response{200, "text/plain", ""}
 
 	correctPaths := CorrectPaths()
@@ -64,8 +68,7 @@ func TestUPdateHandlerCorrectPath(t *testing.T) {
 	for _, url := range correctPaths {
 		t.Run(url, func(t *testing.T) {
 			//Running server and executing request
-			res := runPost(url).Result()
-
+			res := runPost(url)
 			//Defering to close body
 			defer res.Body.Close()
 
@@ -86,20 +89,19 @@ func TestUPdateHandlerCorrectPath(t *testing.T) {
 	}
 }
 
-func runPost(url string) *httptest.ResponseRecorder {
-	//Creating request to execute
-	request := httptest.NewRequest(http.MethodPost, url, nil)
-	request.Header.Set("Content-Type", "text/plain")
-
-	//Creating recorder
-	recorder := httptest.NewRecorder()
-
-	//Define handler
-	testingHandler := http.HandlerFunc(handlers.UpdateHandler)
-
+func runPost(url string) *http.Response {
 	//Running server
-	testingHandler.ServeHTTP(recorder, request)
-	return recorder
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Post("/update/{mtype}/{mname}/{val}", handlers.UpdateHandler)
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+	log.Printf("Url: %v\n", ts.URL+url)
+	resp, err := http.Post(ts.URL+url, "text/plain", nil)
+	if err != nil {
+		return nil
+	}
+	return resp
 }
 
 func CorrectPaths() []string {
@@ -108,7 +110,7 @@ func CorrectPaths() []string {
 
 	gaugeVal := reflect.ValueOf(gauges)
 	for i := 0; i < gaugeVal.NumField(); i++ {
-		url := host + path + fmt.Sprintf("/%s/%v/%v", gauges, gaugeVal.Field(i).Type().Name(), gaugeVal.Field(i))
+		url := fmt.Sprintf("%s/%s/%v/%v", path, gauges, gaugeVal.Field(i).Type().Name(), gaugeVal.Field(i))
 		paths = append(paths, url)
 	}
 	return paths
