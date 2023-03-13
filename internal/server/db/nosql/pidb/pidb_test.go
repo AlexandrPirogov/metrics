@@ -10,16 +10,16 @@ import (
 
 // Checks if new created ram db is empty
 func TestInit(t *testing.T) {
-	db := DB{
+	db := MemStorage{
 		make([]Document, 0),
 	}
 
-	assert.Equal(t, len(db.Documents), 0, "New created DB must be empty")
+	assert.Equal(t, len(db.Documents), 0, "New created MemStorage must be empty")
 }
 
 // Test for saving correct gauges metrics
 func TestWriteCorrectGaugesMetrics(t *testing.T) {
-	db := DB{
+	db := MemStorage{
 		make([]Document, 0),
 	}
 
@@ -37,7 +37,7 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 
 // Test for saving incorrect gauges metrics
 func TestWriteIncorrectGaugesMetrics(t *testing.T) {
-	db := DB{
+	db := MemStorage{
 		make([]Document, 0),
 	}
 	var gauges = metrics.MemStats{}
@@ -56,7 +56,7 @@ func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 
 // Test for saving correct counters metrics
 func TestWriteCounterMetrics(t *testing.T) {
-	db := DB{
+	db := MemStorage{
 		make([]Document, 0),
 	}
 
@@ -74,7 +74,7 @@ func TestWriteCounterMetrics(t *testing.T) {
 
 // Test for saving incorrect counters metrics
 func TestWriteIncorrectCountersMetrics(t *testing.T) {
-	db := DB{
+	db := MemStorage{
 		make([]Document, 0),
 	}
 	var counters = metrics.Polls{}

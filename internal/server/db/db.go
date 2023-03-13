@@ -5,20 +5,20 @@ import (
 	"strconv"
 )
 
-var DB *pidb.DB = &pidb.DB{
+var MemStorage *pidb.MemStorage = &pidb.MemStorage{
 	Documents: make([]pidb.Document, 0),
 }
 
-// Saves metric in DB
+// Saves metric in MemStorage
 func Write(mtype, mname, val string) int {
 	value, err := strconv.ParseFloat(val, 64)
 	if err != nil {
 		return -1
 	}
-	return DB.InsertMetric(mtype, mname, value)
+	return MemStorage.InsertMetric(mtype, mname, value)
 }
 
 // Returns
 func Read() string {
-	return DB.Select()
+	return MemStorage.Select()
 }
