@@ -24,7 +24,7 @@ type httpMemTracker struct {
 	client http.Client
 }
 
-// Starts to read metrics
+// ReadAndSend Starts to read metrics
 //
 // readInterval -- how often read metrics
 //

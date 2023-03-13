@@ -25,7 +25,7 @@ type Trackerable interface {
 	InvokeTrackers()
 }
 
-// Holds all measures in slice
+// MetricsTracker Holds all measures in slice
 type MetricsTracker struct {
 	Metrics []metrics.Metricable
 }
