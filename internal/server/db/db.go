@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+// MemStorage containes all metrics
 var MemStorage *pidb.MemStorage = &pidb.MemStorage{
 	Documents: initDB(),
 }
@@ -36,6 +37,7 @@ func ReadByParams(mtype, mname string) (string, int) {
 	return "", http.StatusNotFound
 }
 
+// initDB initialize map for MemStorage
 func initDB() map[string]map[string]pidb.Document {
 	var imap = map[string]map[string]pidb.Document{}
 	imap["gauge"] = map[string]pidb.Document{}

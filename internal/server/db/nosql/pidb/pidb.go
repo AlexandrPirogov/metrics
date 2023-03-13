@@ -25,6 +25,13 @@ func (d Document) String() string {
 	return fmt.Sprintf("Time: %s, Type: %s, Name: %s, Val: %s", d.Time, d.Type, d.Name, d.Val)
 }
 
+// Select returns code and metric in string representation with given name and type
+//
+// Pre-cond: given mtype, name and val of metric.
+// mtype and name should be one of from package metrics.
+//
+// Post-condition: returns metric in string representation.
+// Returns 0 if successed. Otherwise means fail
 func (p *MemStorage) Select(mtype, mname string) (string, int) {
 	res, code := "", -1
 	if elem, ok := p.Documents[mtype][mname]; ok {
@@ -33,6 +40,7 @@ func (p *MemStorage) Select(mtype, mname string) (string, int) {
 	return res, code
 }
 
+// Metrics returns all metrics in string representions
 func (p *MemStorage) Metrics() string {
 	res := ""
 	for _, types := range p.Documents {

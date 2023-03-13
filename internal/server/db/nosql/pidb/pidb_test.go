@@ -8,6 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO
+// Make Tests better later
+
 // Checks if new created ram db is empty
 func TestInit(t *testing.T) {
 	db := MemStorage{
