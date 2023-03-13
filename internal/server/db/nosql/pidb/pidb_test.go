@@ -11,7 +11,7 @@ import (
 // Checks if new created ram db is empty
 func TestInit(t *testing.T) {
 	db := MemStorage{
-		make([]Document, 0),
+		make(map[string]map[string]Document),
 	}
 
 	assert.Equal(t, len(db.Documents), 0, "New created MemStorage must be empty")
@@ -20,7 +20,7 @@ func TestInit(t *testing.T) {
 // Test for saving correct gauges metrics
 func TestWriteCorrectGaugesMetrics(t *testing.T) {
 	db := MemStorage{
-		make([]Document, 0),
+		make(map[string]map[string]Document),
 	}
 
 	var gauges = metrics.MemStats{}
@@ -28,7 +28,7 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 
 	for i := 0; i < gaugesType.NumField(); i++ {
 		beforeInsert := len(db.Documents)
-		insertStatus := db.InsertMetric(gauges.String(), gaugesType.Field(i).Name, 0)
+		insertStatus := db.InsertMetric(gauges.String(), gaugesType.Field(i).Name, "0")
 		afterInsert := len(db.Documents)
 		assert.Equal(t, 0, insertStatus, "Can't insert correct gauge metric!\n")
 		assert.Greater(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
@@ -38,7 +38,7 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 // Test for saving incorrect gauges metrics
 func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 	db := MemStorage{
-		make([]Document, 0),
+		make(map[string]map[string]Document),
 	}
 	var gauges = metrics.MemStats{}
 	gaugesType := reflect.TypeOf(gauges)
@@ -47,7 +47,7 @@ func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 		beforeInsert := len(db.Documents)
 		modifiedType := " " + gauges.String() + " "
 		modifiedName := " " + gaugesType.Field(i).Name + " "
-		insertStatus := db.InsertMetric(modifiedType, modifiedName, 0)
+		insertStatus := db.InsertMetric(modifiedType, modifiedName, "2")
 		afterInsert := len(db.Documents)
 		assert.NotEqual(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
 		assert.Equal(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
@@ -57,7 +57,7 @@ func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 // Test for saving correct counters metrics
 func TestWriteCounterMetrics(t *testing.T) {
 	db := MemStorage{
-		make([]Document, 0),
+		make(map[string]map[string]Document),
 	}
 
 	var counters = metrics.Polls{}
@@ -65,7 +65,7 @@ func TestWriteCounterMetrics(t *testing.T) {
 
 	for i := 0; i < countersType.NumField(); i++ {
 		beforeInsert := len(db.Documents)
-		insertStatus := db.InsertMetric(counters.String(), countersType.Field(i).Name, 0)
+		insertStatus := db.InsertMetric(counters.String(), countersType.Field(i).Name, "0")
 		afterInsert := len(db.Documents)
 		assert.Equal(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
 		assert.Greater(t, afterInsert, beforeInsert, "After failed insert db size should be not be modified!")
@@ -75,7 +75,7 @@ func TestWriteCounterMetrics(t *testing.T) {
 // Test for saving incorrect counters metrics
 func TestWriteIncorrectCountersMetrics(t *testing.T) {
 	db := MemStorage{
-		make([]Document, 0),
+		make(map[string]map[string]Document),
 	}
 	var counters = metrics.Polls{}
 	countersType := reflect.TypeOf(counters)
@@ -84,7 +84,7 @@ func TestWriteIncorrectCountersMetrics(t *testing.T) {
 		beforeInsert := len(db.Documents)
 		modifiedType := " " + counters.String() + " "
 		modifiedName := " " + countersType.Field(i).Name + " "
-		insertStatus := db.InsertMetric(modifiedType, modifiedName, 0)
+		insertStatus := db.InsertMetric(modifiedType, modifiedName, "2")
 		afterInsert := len(db.Documents)
 		assert.NotEqual(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
 		assert.Equal(t, afterInsert, beforeInsert, "After success insert db size should be increased!")

@@ -2,20 +2,21 @@ package db
 
 import (
 	"memtracker/internal/server/db/nosql/pidb"
+	"net/http"
 	"strconv"
 )
 
 var MemStorage *pidb.MemStorage = &pidb.MemStorage{
-	Documents: make([]pidb.Document, 0),
+	Documents: initDB(),
 }
 
 // Saves metric in MemStorage
 func Write(mtype, mname, val string) int {
-	value, err := strconv.ParseFloat(val, 64)
+	_, err := strconv.ParseFloat(val, 64)
 	if err != nil {
 		return -1
 	}
-	return MemStorage.InsertMetric(mtype, mname, value)
+	return MemStorage.InsertMetric(mtype, mname, val)
 }
 
 // Returns
@@ -28,6 +29,16 @@ func Read() string {
 // Pre-cond: given exicting type and string name for metric
 //
 // Post-cond: returns string of metrics with given name and type
-func ReadByParams(mtype, mname string) string {
-	return MemStorage.Select(mtype, mname)
+func ReadByParams(mtype, mname string) (string, int) {
+	if res, code := MemStorage.Select(mtype, mname); code == 0 {
+		return res, http.StatusOK
+	}
+	return "", http.StatusNotFound
+}
+
+func initDB() map[string]map[string]pidb.Document {
+	var imap = map[string]map[string]pidb.Document{}
+	imap["gauge"] = map[string]pidb.Document{}
+	imap["counter"] = map[string]pidb.Document{}
+	return imap
 }

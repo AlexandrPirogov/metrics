@@ -29,8 +29,9 @@ func RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}
 	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(db.ReadByParams(mtype, mname)))
+	res, code := db.ReadByParams(mtype, mname)
+	w.WriteHeader(code)
+	w.Write([]byte(res))
 }
 
 // UpdateHandler saves incoming metrics

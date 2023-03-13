@@ -10,7 +10,7 @@ import (
 
 // Local db to imitate storage of metrics
 type MemStorage struct {
-	Documents []Document
+	Documents map[string]map[string]Document
 }
 
 // Wrapped JSON
@@ -23,28 +23,30 @@ type Metric struct {
 	Time time.Time
 	Name string
 	Type string
-	Val  float64
+	Val  string
 }
 
-func (p MemStorage) Select(mtype, mname string) string {
-	res := ""
-	var jsonMap map[string]interface{}
-	for _, doc := range p.Documents {
-		err := json.Unmarshal(doc.JSON, &jsonMap)
+func (p MemStorage) Select(mtype, mname string) (string, int) {
+	res, code := "", -1
+	if elem, ok := p.Documents[mtype][mname]; ok {
+		var jsonMap map[string]interface{}
+		err := json.Unmarshal(elem.JSON, &jsonMap)
 		log.Printf("%v\n", jsonMap)
 		if err == nil {
 			if jsonMap["Name"] == mname && jsonMap["Type"] == mtype {
-				res += string(doc.JSON) + "\n"
+				res, code = jsonMap["Val"].(string), 0
 			}
 		}
 	}
-	return res
+	return res, code
 }
 
 func (p MemStorage) Metrics() string {
 	res := ""
-	for _, doc := range p.Documents {
-		res += string(doc.JSON) + "\n"
+	for _, types := range p.Documents {
+		for _, doc := range types {
+			res += string(doc.JSON) + "\n"
+		}
 	}
 	return res
 }
@@ -56,7 +58,7 @@ func (p MemStorage) Metrics() string {
 //
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
-func (p *MemStorage) InsertMetric(mtype, name string, val float64) int {
+func (p *MemStorage) InsertMetric(mtype, name, val string) int {
 	if metrics.IsMetricCorrect(mtype, name) != 0 {
 		log.Printf("Given not existing metric %s %s\n", mtype, name)
 		return -1
@@ -70,14 +72,14 @@ func (p *MemStorage) InsertMetric(mtype, name string, val float64) int {
 //
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
-func (p *MemStorage) insertJSON(mtype, name string, val float64) int {
+func (p *MemStorage) insertJSON(mtype, name string, val string) int {
 	json, err := p.newJSON(mtype, name, val)
 	if err != nil {
 		log.Print(err)
 		return -1
 	} else {
-		p.Documents = append(p.Documents, json)
-		log.Printf("Successfully saved new Metric. MemStorage holds %d documents \n", len(p.Documents))
+		p.Documents[mtype][name] = json
+		log.Printf("Successfully saved new Metric %s \n", json)
 		return 0
 	}
 }
@@ -86,7 +88,7 @@ func (p *MemStorage) insertJSON(mtype, name string, val float64) int {
 // mtype and name should be one of from package metrics.
 //
 // Post-condition: creats new Document instance or returns error
-func (p MemStorage) newJSON(mtype, name string, val float64) (Document, error) {
+func (p MemStorage) newJSON(mtype, name, val string) (Document, error) {
 	metric := Metric{time.Now(), name, mtype, val}
 	js, err := json.Marshal(metric)
 	if err != nil {
