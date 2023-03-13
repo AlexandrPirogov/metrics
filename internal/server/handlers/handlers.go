@@ -10,6 +10,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+func RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(db.Read()))
+}
+
 // UpdateHandler saves incoming metrics
 //
 // Pre-cond: given correct type, name and val of metrics
