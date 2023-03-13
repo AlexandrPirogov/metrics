@@ -87,6 +87,7 @@ func TestUpdateHandlerCorrectPath(t *testing.T) {
 			tests.AssertHeader(t, res, "Content-Type", expectSucces.contentType)
 			//Check for body response
 			tests.AssertEqualValues(t, expectSucces.response, string(resBody))
+			runGet("value/")
 		})
 	}
 }
@@ -106,6 +107,21 @@ func runPost(url string) *http.Response {
 	return resp
 }
 
+func runGet(url string) *http.Response {
+	//Running server
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Get("/value/{mtype}/{mname}", handlers.UpdateHandler)
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+	log.Printf("Url: %v\n", ts.URL+url)
+	resp, err := http.Get(ts.URL + url)
+	if err != nil {
+		return nil
+	}
+	return resp
+}
+
 func CorrectPaths() []string {
 	var gauges = metrics.MemStats{}
 	var paths = make([]string, 0)
@@ -116,4 +132,54 @@ func CorrectPaths() []string {
 		paths = append(paths, url)
 	}
 	return paths
+}
+
+func TestValueGet(t *testing.T) {
+	var gauges = metrics.MemStats{}
+	var paths = make([]string, 0)
+	var readPath = make([]string, 0)
+
+	gaugeVal := reflect.ValueOf(gauges)
+	for i := 0; i < gaugeVal.NumField(); i++ {
+		url := fmt.Sprintf("%s/%s/%v/%v", path, gauges, gaugeVal.Field(i).Type().Name(), gaugeVal.Field(i))
+		paths = append(paths, url)
+		readPath = append(readPath, fmt.Sprintf("/value/%s/%s", gauges, gaugeVal.Field(i).Type().Name()))
+	}
+	expectSucces := response{200, "text/plain", ""}
+
+	correctPaths := CorrectPaths()
+
+	for i := 0; i < len(paths); i++ {
+		t.Run(paths[i], func(t *testing.T) {
+			//Running server and executing request
+			res := runPost(paths[i])
+			//Defering to close body
+			defer res.Body.Close()
+
+			//Check response code
+			tests.AssertEqualValues(t, expectSucces.code, res.StatusCode)
+
+			//Trying to read body
+			resBody, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			//Check for Content-type values
+			tests.AssertHeader(t, res, "Content-Type", expectSucces.contentType)
+			//Check for body response
+			tests.AssertEqualValues(t, expectSucces.response, string(resBody))
+
+			res = runGet(correctPaths[i])
+			//Defering to close body
+			defer res.Body.Close()
+
+			//Trying to read body
+			resBody1, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			log.Printf("%s\n\n%s\n\n\n\n", resBody1, paths[i])
+		})
+	}
 }

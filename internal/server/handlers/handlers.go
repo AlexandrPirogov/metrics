@@ -27,11 +27,12 @@ func RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 	mname := chi.URLParam(r, "mname")
 	if mtype == "" || mname == "" {
 		w.WriteHeader(http.StatusNotFound)
+	} else {
+		w.Header().Set("Content-Type", "text/plain")
+		res, code := db.ReadByParams(mtype, mname)
+		w.WriteHeader(code)
+		w.Write([]byte(res))
 	}
-	w.Header().Set("Content-Type", "text/plain")
-	res, code := db.ReadByParams(mtype, mname)
-	w.WriteHeader(code)
-	w.Write([]byte(res))
 }
 
 // UpdateHandler saves incoming metrics
@@ -49,7 +50,6 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		code := isUpdatePathCorrect(mtype, mname, val)
-		log.Printf("Correct metrics %d\n", code)
 		if code == http.StatusOK {
 			db.Write(mtype, mname, val)
 			w.WriteHeader(http.StatusOK)
