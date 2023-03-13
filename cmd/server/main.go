@@ -8,7 +8,7 @@ import (
 func main() {
 
 	http.HandleFunc("/update/", handlers.UpdateHandler)
-	http.HandleFunc("/", http.NotFound)
+	http.HandleFunc("/", handlers.NotImplementedHandler)
 	server := &http.Server{
 		Addr: ":8080",
 	}

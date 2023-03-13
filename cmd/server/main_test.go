@@ -22,13 +22,13 @@ const host string = "http://localhost:8080"
 const path string = "/update"
 
 func TestUpdateHandlerIncorrectPath(t *testing.T) {
-	expectFail := response{500, "", ""}
+	expectFail := response{http.StatusNotFound, "", ""}
 	incorrectPaths := []string{
 		host + path + "/qwe/asd",
-		host + "/qwe",
-		host + "/A/A/A",
-		host + "/A/B/B/B",
-		host + "/C/B/_/E/W/",
+		host + path + "/qwe",
+		host + path + "/A/",
+		host + path + "/A/",
+		host + path + "/C/",
 	}
 
 	for _, url := range incorrectPaths {
