@@ -5,16 +5,24 @@ import (
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/server/db"
 	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 )
+
+func NotImplementedHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		w.WriteHeader(http.StatusNotImplemented)
+	}
+}
 
 func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		params := strings.Split(r.URL.Path, "/")
 		if len(params) >= 5 {
-			if isUpdatePathCorrect(params) == 0 {
+			code := isUpdatePathCorrect(params)
+			if code == http.StatusOK {
 				mtype := params[2]
 				mname := params[3]
 				val := params[4]
@@ -24,13 +32,13 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(""))
 			} else {
 				log.Printf("Code: %v\n", isUpdatePathCorrect(params))
-				w.WriteHeader(http.StatusInternalServerError)
+				w.WriteHeader(code)
 			}
 		} else {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusNotFound)
 		}
 	} else {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -40,40 +48,26 @@ func isUpdatePathCorrect(path []string) int {
 	metricName := path[3]
 	metricVal := path[4]
 
+	if metricType == "" || metricName == "" || metricVal == "" {
+		return http.StatusNotFound
+	}
 	var gauges = metrics.MemStats{}
 	var counters = metrics.Polls{}
 
 	var mTypes = make(map[string]bool)
-	mTypes[gauges.String()] = true
-	mTypes[counters.String()] = true
+	mTypes[strings.ToLower(gauges.String())] = true
+	mTypes[strings.ToLower(counters.String())] = true
 
 	// If given incorrect path
-	if _, ok := mTypes[metricType]; !ok {
+	if _, ok := mTypes[strings.ToLower(metricType)]; !ok {
 		log.Printf("Given metric type %s not exists!", path[1])
-		return 1
-	}
-
-	if metricsCheck(&gauges, metricName, metricVal) == 0 || metricsCheck(&counters, metricName, metricVal) == 0 {
-		return 0
-	}
-	return -1
-}
-
-func metricsCheck(metric metrics.Metricable, metricName string, metricVal string) int {
-	var metrics = make(map[string]bool)
-	counterVal := reflect.TypeOf(metric).Elem()
-	for i := 0; i < counterVal.NumField(); i++ {
-		metrics[counterVal.Field(i).Name] = true
-	}
-
-	if _, ok := metrics[metricName]; !ok {
-		log.Printf("Metric %s isn't exists!\n", metricName)
-		return 1
+		return http.StatusNotImplemented
 	}
 
 	if _, err := strconv.ParseFloat(metricVal, 64); err != nil {
 		log.Printf("Error: %v", err)
-		return 2
+		return http.StatusBadRequest
 	}
-	return 0
+
+	return http.StatusOK
 }

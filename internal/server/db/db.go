@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-var DB *pidb.DB = &pidb.DB{
+var DB *pidb.MemStorage = &pidb.MemStorage{
 	Documents: make([]pidb.Document, 0),
 }
 

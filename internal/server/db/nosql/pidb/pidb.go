@@ -8,7 +8,7 @@ import (
 )
 
 // Local db to imitate storage of metrics
-type DB struct {
+type MemStorage struct {
 	Documents []Document
 }
 
@@ -24,14 +24,14 @@ type Metric struct {
 	Val  float64
 }
 
-// InsertMetric creates and insert metrics in DB
+// InsertMetric creates and insert metrics in MemStorage
 //
 // Pre-cond: given mtype, name and val of metric.
 // mtype and name should be one of from package metrics.
 //
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
-func (p *DB) InsertMetric(mtype, name string, val float64) int {
+func (p *MemStorage) InsertMetric(mtype, name string, val float64) int {
 	if metrics.IsMetricCorrect(mtype, name) != 0 {
 		log.Printf("Given not existing metric %s %s\n", mtype, name)
 		return -1
@@ -45,14 +45,14 @@ func (p *DB) InsertMetric(mtype, name string, val float64) int {
 //
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
-func (p *DB) insertJSON(mtype, name string, val float64) int {
+func (p *MemStorage) insertJSON(mtype, name string, val float64) int {
 	json, err := p.newJSON(mtype, name, val)
 	if err != nil {
 		log.Print(err)
 		return -1
 	} else {
 		p.Documents = append(p.Documents, json)
-		log.Printf("Successfully saved new Metric. DB holds %d documents \n", len(p.Documents))
+		log.Printf("Successfully saved new Metric. MemStorage holds %d documents \n", len(p.Documents))
 		return 0
 	}
 }
@@ -61,7 +61,7 @@ func (p *DB) insertJSON(mtype, name string, val float64) int {
 // mtype and name should be one of from package metrics.
 //
 // Post-condition: creats new Document instance or returns error
-func (p DB) newJSON(mtype, name string, val float64) (Document, error) {
+func (p MemStorage) newJSON(mtype, name string, val float64) (Document, error) {
 	metric := Metric{name, mtype, val}
 	js, err := json.Marshal(metric)
 	if err != nil {
