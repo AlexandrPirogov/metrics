@@ -11,9 +11,26 @@ import (
 )
 
 func RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
+	mtype := chi.URLParam(r, "mtype")
+	mname := chi.URLParam(r, "mname")
+	if mtype == "" || mname == "" {
+		w.WriteHeader(http.StatusNotFound)
+	}
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(db.Read()))
+}
+
+func RetrieveMetric(w http.ResponseWriter, r *http.Request) {
+	mtype := chi.URLParam(r, "mtype")
+	mname := chi.URLParam(r, "mname")
+	if mtype == "" || mname == "" {
+		w.WriteHeader(http.StatusNotFound)
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(db.ReadByParams(mtype, mname)))
 }
 
 // UpdateHandler saves incoming metrics

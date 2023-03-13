@@ -20,5 +20,14 @@ func Write(mtype, mname, val string) int {
 
 // Returns
 func Read() string {
-	return MemStorage.Select()
+	return MemStorage.Metrics()
+}
+
+// ReadByParams reads metrics from storage by given type and name
+//
+// Pre-cond: given exicting type and string name for metric
+//
+// Post-cond: returns string of metrics with given name and type
+func ReadByParams(mtype, mname string) string {
+	return MemStorage.Select(mtype, mname)
 }

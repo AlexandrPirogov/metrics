@@ -12,6 +12,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Post("/update/{mtype}/{mname}/{val}", handlers.UpdateHandler)
+	r.Get("/value/{mtype}/{mname}", handlers.RetrieveMetric)
 	r.Get("/", handlers.RetrieveMetrics)
 	server := &http.Server{
 		Addr:    ":8080",

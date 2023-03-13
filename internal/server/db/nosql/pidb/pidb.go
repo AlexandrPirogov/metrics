@@ -26,7 +26,22 @@ type Metric struct {
 	Val  float64
 }
 
-func (p MemStorage) Select() string {
+func (p MemStorage) Select(mtype, mname string) string {
+	res := ""
+	var jsonMap map[string]interface{}
+	for _, doc := range p.Documents {
+		err := json.Unmarshal(doc.JSON, &jsonMap)
+		log.Printf("%v\n", jsonMap)
+		if err == nil {
+			if jsonMap["Name"] == mname && jsonMap["Type"] == mtype {
+				res += string(doc.JSON) + "\n"
+			}
+		}
+	}
+	return res
+}
+
+func (p MemStorage) Metrics() string {
 	res := ""
 	for _, doc := range p.Documents {
 		res += string(doc.JSON) + "\n"
