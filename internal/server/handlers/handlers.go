@@ -5,18 +5,10 @@ import (
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/server/db"
 	"net/http"
-	"reflect"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
-
-// GetDocuments returns saved metrics on server
-func GetDocuments(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(db.Read()))
-}
 
 // UpdateHandler saves incoming metrics
 //
@@ -34,12 +26,12 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		code := isUpdatePathCorrect(mtype, mname, val)
 		log.Printf("Correct metrics %d\n", code)
-		if code == 0 {
+		if code == http.StatusOK {
 			db.Write(mtype, mname, val)
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(""))
 		} else {
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(code)
 		}
 	}
 }
@@ -60,35 +52,12 @@ func isUpdatePathCorrect(mtype, mname, mval string) int {
 	// If given incorrect path
 	if _, ok := mTypes[mtype]; !ok {
 		log.Printf("Given metric type %s not exists!", mtype)
-		return -1
+		return http.StatusNotImplemented
 	}
 
-	if metricsCheck(&gauges, mname, mval) == 0 || metricsCheck(&counters, mname, mval) == 0 {
-		return 0
-	}
-	return -1
-}
-
-// metricsCheck checks if given name is correct for given type of metric
-//
-// Pre-cond: given string type and val
-//
-// Post-cond: if metric is correct -- return 0. Otherwise -1
-func metricsCheck(metric metrics.Metricable, metricName string, metricVal string) int {
-	var metrics = make(map[string]bool)
-	counterVal := reflect.TypeOf(metric).Elem()
-	for i := 0; i < counterVal.NumField(); i++ {
-		metrics[counterVal.Field(i).Name] = true
-	}
-
-	if _, ok := metrics[metricName]; !ok {
-		log.Printf("Metric %s isn't exists!\n", metricName)
-		return -1
-	}
-
-	if _, err := strconv.ParseFloat(metricVal, 64); err != nil {
+	if _, err := strconv.ParseFloat(mval, 64); err != nil {
 		log.Printf("Error: %v", err)
-		return -1
+		return http.StatusBadRequest
 	}
-	return 0
+	return http.StatusOK
 }
