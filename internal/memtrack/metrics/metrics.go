@@ -9,39 +9,41 @@
 package metrics
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 )
 
-// Metricalbes entities should update own metrics by Read() int method
-// Read returns 0 if success otherwise error code
+// Metricalbes entities should update own metrics by Read() errpr method
+// Read returns nil if success otherwise error
 type Metricable interface {
 	Read() error
 	String() string
 }
 
-func IsMetricCorrect(mtype, name string) int {
+func IsMetricCorrect(mtype, name string) error {
 	var metrics = []Metricable{
 		&MemStats{},
 		&Polls{},
 	}
 	for _, metric := range metrics {
-		if checkFields(metric, mtype, name) == 0 {
-			return 0
+		if checkFields(metric, mtype, name) == nil {
+			return nil
 		}
 	}
-	return -1
+	return errors.New("incorrect metric")
 }
 
-func checkFields(metric Metricable, mtype string, name string) int {
+func checkFields(metric Metricable, mtype string, name string) error {
 	if metric.String() == mtype {
-		return 0
+		return nil
 	}
 	metricType := reflect.TypeOf(metric).Elem()
 
 	for i := 0; i < metricType.NumField(); i++ {
 		if name == metricType.Field(i).Name {
-			return 0
+			return nil
 		}
 	}
-	return -1
+	return errors.New(fmt.Sprintf("Field %s not found in %s", name, mtype))
 }
