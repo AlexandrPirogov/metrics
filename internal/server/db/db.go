@@ -2,7 +2,6 @@ package db
 
 import (
 	"memtracker/internal/server/db/nosql/pidb"
-	"net/http"
 	"strconv"
 )
 
@@ -30,11 +29,8 @@ func Read() string {
 // Pre-cond: given exicting type and string name for metric
 //
 // Post-cond: returns string of metrics with given name and type
-func ReadByParams(mtype, mname string) (string, int) {
-	if res, code := MemStorage.Select(mtype, mname); code == 0 {
-		return res, http.StatusOK
-	}
-	return "", http.StatusNotFound
+func ReadByParams(mtype, mname string) (string, error) {
+	return MemStorage.Select(mtype, mname)
 }
 
 // initDB initialize map for MemStorage
