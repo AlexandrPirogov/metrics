@@ -17,8 +17,7 @@ func Write(mtype, mname, val string) error {
 	if err != nil {
 		return err
 	}
-	MemStorage.InsertMetric(mtype, mname, val)
-	return nil
+	return MemStorage.InsertMetric(mtype, mname, val)
 }
 
 // Returns
