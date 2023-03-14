@@ -12,12 +12,13 @@ var MemStorage *pidb.MemStorage = &pidb.MemStorage{
 }
 
 // Saves metric in MemStorage
-func Write(mtype, mname, val string) int {
+func Write(mtype, mname, val string) error {
 	_, err := strconv.ParseFloat(val, 64)
 	if err != nil {
-		return -1
+		return err
 	}
-	return MemStorage.InsertMetric(mtype, mname, val)
+	MemStorage.InsertMetric(mtype, mname, val)
+	return nil
 }
 
 // Returns
