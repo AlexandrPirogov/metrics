@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"math/rand"
-	"reflect"
 	"runtime"
 )
 
@@ -164,7 +163,39 @@ func (m *MemStats) Read() error {
 	return nil
 }
 
+func (m MemStats) AsMap() map[string]interface{} {
+	metrics := make(map[string]interface{}, 28)
+	metrics["alloc"] = Alloc(m.Alloc)
+	metrics["buckhashsys"] = BuckHashSys(m.BuckHashSys)
+	metrics["frees"] = Frees(m.Frees)
+	metrics["gccpufraction"] = GCCPUFraction(m.GCCPUFraction)
+	metrics["gcsys"] = GCSys(m.GCSys)
+	metrics["heapalloc"] = HeapAlloc(m.HeapAlloc)
+	metrics["heapidle"] = HeapIdle(m.HeapIdle)
+	metrics["heapinuse"] = HeapInuse(m.HeapInuse)
+	metrics["heapobjects"] = HeapObjects(m.HeapObjects)
+	metrics["heapreleased"] = HeapReleased(m.HeapReleased)
+	metrics["heapsys"] = HeapSys(m.HeapSys)
+	metrics["lastgc"] = LastGC(m.LastGC)
+	metrics["lookups"] = Lookups(m.Lookups)
+	metrics["mcacheinuse"] = MCacheInuse(m.MCacheInuse)
+	metrics["mcachesys"] = MCacheSys(m.MCacheSys)
+	metrics["mspaninuse"] = MSpanInuse(m.MSpanInuse)
+	metrics["mspansys"] = MSpanSys(m.MSpanSys)
+	metrics["mallocs"] = Mallocs(m.Mallocs)
+	metrics["nextgc"] = NextGC(m.NextGC)
+	metrics["numforcedgc"] = NumForcedGC(m.NumForcedGC)
+	metrics["numgc"] = NumGC(m.NumGC)
+	metrics["othersys"] = OtherSys(m.OtherSys)
+	metrics["pausetotalns"] = PauseTotalNs(m.PauseTotalNs)
+	metrics["stackinuse"] = StackInuse(m.StackInuse)
+	metrics["stacksys"] = StackSys(m.StackSys)
+	metrics["sys"] = Sys(m.Sys)
+	metrics["totalalloc"] = TotalAlloc(m.TotalAlloc)
+	metrics["randomvalue"] = RandomValue(rand.Float64())
+	return metrics
+}
+
 func (m MemStats) String() string {
-	var tmp gauge
-	return reflect.TypeOf(tmp).Name()
+	return "gauge"
 }

@@ -27,6 +27,12 @@ func (p *Polls) Read() error {
 	}
 }
 
+func (p Polls) AsMap() map[string]interface{} {
+	metrics := make(map[string]interface{}, 28)
+	metrics["pollcount"] = PollCount(p.PollCount)
+	return metrics
+}
+
 func (p Polls) String() string {
 	var tmp counter
 	return reflect.TypeOf(tmp).Name()

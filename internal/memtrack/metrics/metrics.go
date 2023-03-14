@@ -19,6 +19,7 @@ import (
 type Metricable interface {
 	Read() error
 	String() string
+	AsMap() map[string]interface{}
 }
 
 func IsMetricCorrect(mtype, name string) error {

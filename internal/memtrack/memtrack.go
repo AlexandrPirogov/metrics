@@ -7,7 +7,6 @@ import (
 	"log"
 	"memtracker/internal/memtrack/trackers"
 	"net/http"
-	"reflect"
 	"time"
 )
 
@@ -48,9 +47,9 @@ func (h httpMemTracker) ReadAndSend(readInterval time.Duration, sendInterval tim
 // Sends metrics to given host
 func (h httpMemTracker) send() {
 	for _, metric := range h.MetricsContainer.Metrics {
-		metricVal := reflect.ValueOf(metric).Elem()
-		for i := 0; i < metricVal.NumField(); i++ {
-			url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, metricVal.Field(i).Type().Name(), metricVal.Field(i))
+		metrics := metric.AsMap()
+		for k, v := range metrics {
+			url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, k, v)
 			log.Printf("Sending metrics to: %s\n", url)
 			resp, err := h.client.Post(url, "text/plain", nil)
 			if err != nil {
@@ -58,7 +57,6 @@ func (h httpMemTracker) send() {
 			}
 			defer resp.Body.Close()
 		}
-
 	}
 }
 
