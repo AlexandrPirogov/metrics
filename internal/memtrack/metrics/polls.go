@@ -1,6 +1,9 @@
 package metrics
 
-import "reflect"
+import (
+	"errors"
+	"reflect"
+)
 
 type counter int64
 type PollCount counter // Count of times when Metrics was collected
@@ -12,15 +15,15 @@ type Polls struct {
 // Read Increasing PollCount by 1
 // WARNING: PollCount is not reseting
 // Overflow may appear
-func (p *Polls) Read() int {
+func (p *Polls) Read() error {
 	oldP := p.PollCount
 	p.PollCount++
 	//Checks for overflow
 	if p.PollCount > oldP {
-		return 0
+		return nil
 	} else {
 		//Overflow appears
-		return -1
+		return errors.New("Overflow appeared")
 	}
 }
 

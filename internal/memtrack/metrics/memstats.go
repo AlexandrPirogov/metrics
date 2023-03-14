@@ -130,7 +130,7 @@ type MemStats struct {
 //
 // Post-cond: metrics updated using package runtime
 // Reflect could be used here
-func (m *MemStats) Read() int {
+func (m *MemStats) Read() error {
 	var runtimeMemStat runtime.MemStats
 	runtime.ReadMemStats(&runtimeMemStat)
 	m.Alloc = Alloc(runtimeMemStat.Alloc)
@@ -161,7 +161,7 @@ func (m *MemStats) Read() int {
 	m.Sys = Sys(runtimeMemStat.Sys)
 	m.TotalAlloc = TotalAlloc(runtimeMemStat.TotalAlloc)
 	m.RandomValue = RandomValue(rand.Float64())
-	return 0
+	return nil
 }
 
 func (m MemStats) String() string {

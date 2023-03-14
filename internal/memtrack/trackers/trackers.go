@@ -34,12 +34,12 @@ type MetricsTracker struct {
 //
 // Post-cond: requests measures to update own metrics.
 // returns 0 if success otherwise we can return error_code
-func (g *MetricsTracker) InvokeTrackers() int {
+func (g *MetricsTracker) InvokeTrackers() error {
 	for _, tracker := range g.Metrics {
-		code := tracker.Read()
-		if code != 0 {
-			return code
+		err := tracker.Read()
+		if err != nil {
+			return err
 		}
 	}
-	return 0
+	return nil
 }
