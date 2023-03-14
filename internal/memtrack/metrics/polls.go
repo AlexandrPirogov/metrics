@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"errors"
+	"fmt"
 )
 
 type counter int64
@@ -22,7 +22,7 @@ func (p *Polls) Read() error {
 		return nil
 	} else {
 		//Overflow appears
-		return errors.New("Overflow appeared")
+		return fmt.Errorf("overflow appeared")
 	}
 }
 

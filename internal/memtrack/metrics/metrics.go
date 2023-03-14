@@ -9,7 +9,6 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -32,7 +31,7 @@ func IsMetricCorrect(mtype, name string) error {
 			return nil
 		}
 	}
-	return errors.New("incorrect metric")
+	return fmt.Errorf("incorrect metric")
 }
 
 func checkFields(metric Metricable, mtype string, name string) error {
@@ -46,5 +45,5 @@ func checkFields(metric Metricable, mtype string, name string) error {
 			return nil
 		}
 	}
-	return errors.New(fmt.Sprintf("Field %s not found in %s", name, mtype))
+	return fmt.Errorf("field %s not found in %s", name, mtype)
 }

@@ -13,7 +13,7 @@ import (
 // Asserts that two values are equals
 func AssertEqualValues(t *testing.T, expected interface{}, actual interface{}) {
 	if !assert.EqualValues(t, expected, actual, "Two values must be equals") {
-		t.Errorf("Values are not equal! Expected %s got %s\n", expected, actual)
+		t.Errorf("values are not equal! Expected %s got %s\n", expected, actual)
 	}
 }
 
@@ -25,7 +25,7 @@ func AssertHeader(t *testing.T, r *http.Response, header string, expectVal strin
 // Asserts that two values are NOT equals
 func AssertNotEqualValues(t *testing.T, expected interface{}, actual interface{}) {
 	if assert.EqualValues(t, expected, actual, "Two values must be equals") {
-		t.Errorf("We've got unexpected Content-Type! Expected %s got %s\n", expected, actual)
+		t.Errorf("we've got unexpected Content-Type! Expected %s got %s\n", expected, actual)
 	}
 }
 

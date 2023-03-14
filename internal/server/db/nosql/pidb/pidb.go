@@ -36,7 +36,7 @@ func (d Document) String() string {
 // Post-condition: returns metric in string representation.
 // Returns 0 if successed. Otherwise means fail
 func (p *MemStorage) Select(mtype, mname string) (string, error) {
-	res, err := "", errors.New("Not found")
+	res, err := "", fmt.Errorf("not found")
 	if elem, ok := p.Documents[mtype][mname]; ok {
 		return elem.Val, nil
 	}
