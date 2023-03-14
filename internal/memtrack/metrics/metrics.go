@@ -21,6 +21,11 @@ type Metricable interface {
 	AsMap() map[string]interface{}
 }
 
+// IsMetricCorrect checks if given type and name for metric is correct
+//
+// Pre-cond: given correct name and type of metric
+//
+// Post-cond: return nil if metric is correct, otherwise returns error
 func IsMetricCorrect(mtype, name string) error {
 	var metrics = []Metricable{
 		&MemStats{},
@@ -34,10 +39,16 @@ func IsMetricCorrect(mtype, name string) error {
 	return fmt.Errorf("incorrect metric")
 }
 
+// checkFields checks if given type and name exists in given metric
+//
+// Pre-cond: given correct metric interface name and type of metric
+//
+// Post-cond: return nil if metric is correct, otherwise returns error
 func checkFields(metric Metricable, mtype string, name string) error {
 	if metric.String() == mtype {
 		return nil
 	}
+
 	metricType := reflect.TypeOf(metric).Elem()
 
 	for i := 0; i < metricType.NumField(); i++ {
