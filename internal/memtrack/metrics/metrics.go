@@ -52,7 +52,7 @@ func checkFields(metric Metricable, mtype string, name string) error {
 	metrics := metric.AsMap()
 	for mname := range metrics {
 
-		if strings.ToLower(name) == strings.ToLower(mname) {
+		if strings.EqualFold(name, mname) {
 			return nil
 		}
 	}
