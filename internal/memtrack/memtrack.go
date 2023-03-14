@@ -38,13 +38,9 @@ func (h httpMemTracker) ReadAndSend(readInterval time.Duration, sendInterval tim
 		//TODO: fix race condition. Read about mutexes in Go
 		select {
 		case <-readTicker.C:
-			go func() {
-				h.update()
-			}()
+			h.update()
 		case <-sendTicker.C:
-			go func() {
-				h.send()
-			}()
+			h.send()
 		}
 	}
 }
