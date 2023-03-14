@@ -1,6 +1,7 @@
 package pidb
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"memtracker/internal/memtrack/metrics"
@@ -58,13 +59,14 @@ func (p *MemStorage) Metrics() string {
 //
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
-func (p *MemStorage) InsertMetric(mtype, name, val string) int {
+func (p *MemStorage) InsertMetric(mtype, name, val string) error {
 	if metrics.IsMetricCorrect(mtype, name) != 0 {
-		log.Printf("Given not existing metric %s %s\n", mtype, name)
-		return -1
+		errMsg := fmt.Sprintf("Given not existing metric %s %s\n", mtype, name)
+		log.Println(errMsg)
+		return errors.New(errMsg)
 	}
 	p.insertJSON(mtype, name, val)
-	return 0
+	return nil
 }
 
 // Creates Document by given args and insert it to storage
