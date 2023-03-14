@@ -31,8 +31,13 @@ func RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
-		res, code := db.ReadByParams(mtype, mname)
-		w.WriteHeader(code)
+		res, err := db.ReadByParams(mtype, mname)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			log.Println(err)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
 		w.Write([]byte(res))
 	}
 }
