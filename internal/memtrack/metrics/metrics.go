@@ -49,7 +49,7 @@ func checkFields(metric Metricable, mtype string, name string) error {
 	}
 
 	metrics := metric.AsMap()
-	for mname, _ := range metrics {
+	for mname := range metrics {
 		if name == mname {
 			return nil
 		}
