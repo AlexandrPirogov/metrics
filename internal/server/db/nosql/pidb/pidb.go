@@ -35,12 +35,12 @@ func (d Document) String() string {
 //
 // Post-condition: returns metric in string representation.
 // Returns 0 if successed. Otherwise means fail
-func (p *MemStorage) Select(mtype, mname string) (string, int) {
-	res, code := "", -1
+func (p *MemStorage) Select(mtype, mname string) (string, error) {
+	res, err := "", errors.New("Not found")
 	if elem, ok := p.Documents[mtype][mname]; ok {
-		return elem.Val, 0
+		return elem.Val, nil
 	}
-	return res, code
+	return res, err
 }
 
 // Metrics returns all metrics in string representions
