@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"errors"
-	"reflect"
 )
 
 type counter int64
@@ -34,6 +33,5 @@ func (p Polls) AsMap() map[string]interface{} {
 }
 
 func (p Polls) String() string {
-	var tmp counter
-	return reflect.TypeOf(tmp).Name()
+	return "counter"
 }
