@@ -1,8 +1,8 @@
 package pidb
 
 import (
+	"log"
 	"memtracker/internal/memtrack/metrics"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,13 +29,13 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 	}
 
 	var gauges = metrics.MemStats{}
-	gaugesType := reflect.TypeOf(gauges)
-
-	for i := 0; i < gaugesType.NumField(); i++ {
+	metrics := gauges.AsMap()
+	for name := range metrics {
 		//	beforeInsert := len(db.Documents)
-		insertStatus := db.InsertMetric(gauges.String(), gaugesType.Field(i).Name, "0")
+		log.Printf("hehe--%s--%s--", name, gauges.String())
+		insertStatus := db.InsertMetric(gauges.String(), name, "0")
 		//	afterInsert := len(db.Documents)
-		assert.Equal(t, 0, insertStatus, "Can't insert correct gauge metric!\n")
+		assert.Equal(t, nil, insertStatus, "Can't insert correct gauge metric!\n")
 		//assert.Greater(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
 	}
 }
@@ -47,15 +47,14 @@ func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 		Documents: initDB(),
 	}
 	var gauges = metrics.MemStats{}
-	gaugesType := reflect.TypeOf(gauges)
-
-	for i := 0; i < gaugesType.NumField(); i++ {
+	metrics := gauges.AsMap()
+	for name := range metrics {
 		beforeInsert := len(db.Documents)
 		modifiedType := " " + gauges.String() + " "
-		modifiedName := " " + gaugesType.Field(i).Name + " "
+		modifiedName := " " + name + " "
 		insertStatus := db.InsertMetric(modifiedType, modifiedName, "2")
 		afterInsert := len(db.Documents)
-		assert.NotEqual(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
+		assert.NotEqual(t, nil, insertStatus, "Can't insert correcet gauge metric!\n")
 		assert.Equal(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
 	}
 }
@@ -68,13 +67,12 @@ func TestWriteCounterMetrics(t *testing.T) {
 	}
 
 	var counters = metrics.Polls{}
-	countersType := reflect.TypeOf(counters)
-
-	for i := 0; i < countersType.NumField(); i++ {
+	metrics := counters.AsMap()
+	for name := range metrics {
 		//beforeInsert := len(db.Documents)
-		insertStatus := db.InsertMetric(counters.String(), countersType.Field(i).Name, "0")
+		insertStatus := db.InsertMetric(counters.String(), name, "0")
 		//afterInsert := len(db.Documents)
-		assert.Equal(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
+		assert.Equal(t, nil, insertStatus, "Can't insert correcet gauge metric!\n")
 		//assert.Greater(t, afterInsert, beforeInsert, "After failed insert db size should be not be modified!")
 	}
 }
@@ -86,12 +84,11 @@ func TestWriteIncorrectCountersMetrics(t *testing.T) {
 		Documents: initDB(),
 	}
 	var counters = metrics.Polls{}
-	countersType := reflect.TypeOf(counters)
-
-	for i := 0; i < countersType.NumField(); i++ {
+	metrics := counters.AsMap()
+	for name := range metrics {
 		beforeInsert := len(db.Documents)
 		modifiedType := " " + counters.String() + " "
-		modifiedName := " " + countersType.Field(i).Name + " "
+		modifiedName := " " + name + " "
 		insertStatus := db.InsertMetric(modifiedType, modifiedName, "2")
 		afterInsert := len(db.Documents)
 		assert.NotEqual(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")

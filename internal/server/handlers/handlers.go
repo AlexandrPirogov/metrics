@@ -58,7 +58,9 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		code := isUpdatePathCorrect(mtype, mname, val)
 		if code == http.StatusOK {
-			db.Write(mtype, mname, val)
+			if err := db.Write(mtype, mname, val); err != nil {
+				log.Println(err)
+			}
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(""))
 		} else {

@@ -10,6 +10,7 @@ package metrics
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Metricalbes entities should update own metrics by Read() errpr method
@@ -50,7 +51,8 @@ func checkFields(metric Metricable, mtype string, name string) error {
 
 	metrics := metric.AsMap()
 	for mname := range metrics {
-		if name == mname {
+
+		if strings.ToLower(name) == strings.ToLower(mname) {
 			return nil
 		}
 	}

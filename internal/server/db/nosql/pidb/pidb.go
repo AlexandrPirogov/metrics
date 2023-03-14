@@ -64,6 +64,7 @@ func (p *MemStorage) Metrics() string {
 func (p *MemStorage) InsertMetric(mtype, name, val string) error {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
+	log.Printf("Got--%s--%s--", name, mtype)
 	if metrics.IsMetricCorrect(mtype, name) != nil {
 		errMsg := fmt.Sprintf("Given not existing metric %s %s\n", mtype, name)
 		log.Println(errMsg)
