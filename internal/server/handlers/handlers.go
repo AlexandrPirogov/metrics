@@ -10,8 +10,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type Handler struct {
+	DB db.DB
+}
+
 // RetrieveMetric return all contained metrics
-func RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	if mtype == "" || mname == "" {
@@ -19,19 +23,19 @@ func RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(db.Read()))
+		w.Write([]byte(h.DB.Read()))
 	}
 }
 
 // RetrieveMetric returns one metric by given type and name
-func RetrieveMetric(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	if mtype == "" || mname == "" {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
-		res, err := db.ReadByParams(mtype, mname)
+		res, err := h.DB.ReadByParams(mtype, mname)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			log.Println(err)
@@ -47,7 +51,7 @@ func RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 // Pre-cond: given correct type, name and val of metrics
 //
 // Post-cond: correct metrics saved on server
-func UpdateHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
@@ -58,7 +62,7 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		code := isUpdatePathCorrect(mtype, mname, val)
 		if code == http.StatusOK {
-			if err := db.Write(mtype, mname, val); err != nil {
+			if err := h.DB.Write(mtype, mname, val); err != nil {
 				log.Println(err)
 			}
 			w.WriteHeader(http.StatusOK)

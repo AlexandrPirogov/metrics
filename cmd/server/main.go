@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"memtracker/internal/server/db"
 	"memtracker/internal/server/handlers"
 	"net/http"
 	"os"
@@ -17,11 +18,12 @@ func main() {
 
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
+		handler := handlers.Handler{DB: db.DB{Storage: db.MemStoageDB()}}
 		r := chi.NewRouter()
 		r.Use(middleware.Logger)
-		r.Post("/update/{mtype}/{mname}/{val}", handlers.UpdateHandler)
-		r.Get("/value/{mtype}/{mname}", handlers.RetrieveMetric)
-		r.Get("/", handlers.RetrieveMetrics)
+		r.Post("/update/{mtype}/{mname}/{val}", handler.UpdateHandler)
+		r.Get("/value/{mtype}/{mname}", handler.RetrieveMetric)
+		r.Get("/", handler.RetrieveMetrics)
 		server := &http.Server{
 			Addr:    ":8080",
 			Handler: r,

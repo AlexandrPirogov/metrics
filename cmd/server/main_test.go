@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/server/db"
 	"memtracker/internal/server/handlers"
 	"memtracker/internal/tests"
 	"net/http"
@@ -93,9 +94,10 @@ func TestUpdateHandlerCorrectPath(t *testing.T) {
 
 func runPost(url string) *http.Response {
 	//Running server
+	handler := handlers.Handler{DB: db.DB{Storage: db.MemStoageDB()}}
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Post("/update/{mtype}/{mname}/{val}", handlers.UpdateHandler)
+	r.Post("/update/{mtype}/{mname}/{val}", handler.UpdateHandler)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	log.Printf("Url: %v\n", ts.URL+url)
@@ -108,9 +110,10 @@ func runPost(url string) *http.Response {
 
 func runGet(url string) *http.Response {
 	//Running server
+	handler := handlers.Handler{DB: db.DB{Storage: db.MemStoageDB()}}
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/value/{mtype}/{mname}", handlers.UpdateHandler)
+	r.Get("/value/{mtype}/{mname}", handler.UpdateHandler)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	log.Printf("Url: %v\n", ts.URL+url)

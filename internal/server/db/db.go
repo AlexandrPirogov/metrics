@@ -3,25 +3,25 @@ package db
 import (
 	"memtracker/internal/server/db/nosql/pidb"
 	"strconv"
+	"sync"
 )
 
-// MemStorage containes all metrics
-var MemStorage *pidb.MemStorage = &pidb.MemStorage{
-	Documents: initDB(),
+type DB struct {
+	Storage pidb.MemStorage
 }
 
 // Saves metric in MemStorage
-func Write(mtype, mname, val string) error {
+func (d *DB) Write(mtype, mname, val string) error {
 	_, err := strconv.ParseFloat(val, 64)
 	if err != nil {
 		return err
 	}
-	return MemStorage.InsertMetric(mtype, mname, val)
+	return d.Storage.InsertMetric(mtype, mname, val)
 }
 
 // Returns
-func Read() string {
-	return MemStorage.Metrics()
+func (d *DB) Read() string {
+	return d.Storage.Metrics()
 }
 
 // ReadByParams reads metrics from storage by given type and name
@@ -29,14 +29,14 @@ func Read() string {
 // Pre-cond: given exicting type and string name for metric
 //
 // Post-cond: returns string of metrics with given name and type
-func ReadByParams(mtype, mname string) (string, error) {
-	return MemStorage.Select(mtype, mname)
+func (d *DB) ReadByParams(mtype, mname string) (string, error) {
+	return d.Storage.Select(mtype, mname)
 }
 
 // initDB initialize map for MemStorage
-func initDB() map[string]map[string]pidb.Document {
+func MemStoageDB() pidb.MemStorage {
 	var imap = map[string]map[string]pidb.Document{}
 	imap["gauge"] = map[string]pidb.Document{}
 	imap["counter"] = map[string]pidb.Document{}
-	return imap
+	return pidb.MemStorage{Mutex: sync.RWMutex{}, Documents: imap}
 }
