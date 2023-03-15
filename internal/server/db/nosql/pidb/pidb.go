@@ -66,8 +66,6 @@ func (p *MemStorage) Metrics() string {
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
 func (p *MemStorage) InsertMetric(mtype, name, val string) error {
-	p.Mutex.Lock()
-	defer p.Mutex.Unlock()
 	log.Printf("Got--%s--%s--", name, mtype)
 	if metrics.IsMetricCorrect(mtype, name) != nil {
 		errMsg := fmt.Sprintf("Given not existing metric %s %s\n", mtype, name)
@@ -85,6 +83,8 @@ func (p *MemStorage) InsertMetric(mtype, name, val string) error {
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
 func (p *MemStorage) insertJSON(mtype, name string, val string) {
+	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
 	document := p.newJSON(mtype, name, val)
 	p.Documents[mtype][name] = document
 }
