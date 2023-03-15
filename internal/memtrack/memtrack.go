@@ -46,20 +46,19 @@ func (h httpMemTracker) ReadAndSend(readInterval time.Duration, sendInterval tim
 
 // Sends metrics to given host
 func (h httpMemTracker) send() {
-	go func() {
-		for _, metric := range h.MetricsContainer.Metrics {
-			metrics := metric.AsMap()
-			for k, v := range metrics {
-				url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, k, v)
-				log.Printf("Sending metrics to: %s\n", url)
-				resp, err := h.client.Post(url, "text/plain", nil)
-				if err != nil {
-					log.Print(err)
-				}
-				defer resp.Body.Close()
+	for _, metric := range h.MetricsContainer.Metrics {
+		metrics := metric.AsMap()
+		for k, v := range metrics {
+			url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, k, v)
+			log.Printf("Sending metrics to: %s\n", url)
+			resp, err := h.client.Post(url, "text/plain", nil)
+			if err != nil {
+				log.Print(err)
 			}
+			defer resp.Body.Close()
 		}
-	}()
+	}
+
 }
 
 // updates values of tracking metrics

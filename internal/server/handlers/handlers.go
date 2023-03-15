@@ -11,7 +11,7 @@ import (
 )
 
 type Handler struct {
-	DB db.DB
+	DB db.Storable
 }
 
 // RetrieveMetric return all contained metrics

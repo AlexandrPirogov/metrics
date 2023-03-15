@@ -6,6 +6,12 @@ import (
 	"sync"
 )
 
+type Storable interface {
+	Write(mtype, mname, val string) error
+	Read() string
+	ReadByParams(mtype, mname string) (string, error)
+}
+
 type DB struct {
 	Storage pidb.MemStorage
 }

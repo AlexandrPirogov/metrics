@@ -17,13 +17,13 @@ func main() {
 	cancelChan := make(chan os.Signal, 1)
 
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
+	handler := handlers.Handler{DB: &db.DB{Storage: db.MemStoageDB()}}
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Post("/update/{mtype}/{mname}/{val}", handler.UpdateHandler)
+	r.Get("/value/{mtype}/{mname}", handler.RetrieveMetric)
+	r.Get("/", handler.RetrieveMetrics)
 	go func() {
-		handler := handlers.Handler{DB: db.DB{Storage: db.MemStoageDB()}}
-		r := chi.NewRouter()
-		r.Use(middleware.Logger)
-		r.Post("/update/{mtype}/{mname}/{val}", handler.UpdateHandler)
-		r.Get("/value/{mtype}/{mname}", handler.RetrieveMetric)
-		r.Get("/", handler.RetrieveMetrics)
 		server := &http.Server{
 			Addr:    ":8080",
 			Handler: r,
@@ -33,6 +33,7 @@ func main() {
 			log.Printf("%v", err)
 		}
 	}()
+
 	sig := <-cancelChan
 	log.Printf("Caught signal %v", sig)
 	close(cancelChan)
