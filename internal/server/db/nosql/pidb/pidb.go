@@ -36,6 +36,8 @@ func (d Document) String() string {
 // Post-condition: returns metric in string representation.
 // Returns 0 if successed. Otherwise means fail
 func (p *MemStorage) Select(mtype, mname string) (string, error) {
+	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
 	res, err := "", fmt.Errorf("not found")
 	if elem, ok := p.Documents[mtype][mname]; ok {
 		return elem.Val, nil
@@ -45,6 +47,8 @@ func (p *MemStorage) Select(mtype, mname string) (string, error) {
 
 // Metrics returns all metrics in string representions
 func (p *MemStorage) Metrics() string {
+	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
 	res := ""
 	for _, types := range p.Documents {
 		for _, doc := range types {
