@@ -3,33 +3,20 @@ package main
 import (
 	"context"
 	"log"
+	"memtracker/internal/server"
 	"memtracker/internal/server/db"
 	"memtracker/internal/server/handlers"
-	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	handler := handlers.Handler{DB: &db.DB{Storage: db.MemStoageDB()}}
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Post("/update/{mtype}/{mname}/{val}", handler.UpdateHandler)
-	r.Get("/value/{mtype}/{mname}", handler.RetrieveMetric)
-	r.Get("/", handler.RetrieveMetrics)
-	server := &http.Server{
-		Addr:        ":8080",
-		Handler:     r,
-		BaseContext: func(listener net.Listener) context.Context { return ctx },
-	}
+	handler := &handlers.DefaultHandler{DB: &db.DB{Storage: db.MemStoageDB()}}
+	server := server.NewMetricServer(":8080", handler, ctx)
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {

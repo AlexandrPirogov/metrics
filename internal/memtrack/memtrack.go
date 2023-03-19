@@ -52,6 +52,7 @@ func (h httpMemTracker) send() {
 			url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, k, v)
 			log.Printf("Sending metrics to: %s\n", url)
 			resp, err := h.client.Post(url, "text/plain", nil)
+
 			if err != nil {
 				log.Print(err)
 			}

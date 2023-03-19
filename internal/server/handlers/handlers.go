@@ -10,17 +10,34 @@ import (
 )
 
 type MetricsStorer interface {
+	// Reads all metrics and returns their string representation
 	Read() string
+	// Read metrics with given type and name.
+	//
+	// Pre-cond: Given correct mtype and mname
+	//
+	// Post-cond: Returns suitable metrics according to given mtype and mname
 	ReadByParams(mtype string, mname string) (string, error)
+	// Writes metric in store
+	//
+	// Pre-cond: given correct type name and value of metric
+	//
+	// Post-cond: stores metric in storage. If success error equals nil
 	Write(mtype string, mname string, val string) error
 }
 
-type Handler struct {
+type MetricsHandler interface {
+	RetrieveMetrics(w http.ResponseWriter, r *http.Request)
+	RetrieveMetric(w http.ResponseWriter, r *http.Request)
+	UpdateHandler(w http.ResponseWriter, r *http.Request)
+}
+
+type DefaultHandler struct {
 	DB MetricsStorer
 }
 
 // RetrieveMetric return all contained metrics
-func (h *Handler) RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	if mtype == "" || mname == "" {
@@ -33,14 +50,14 @@ func (h *Handler) RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 // RetrieveMetric returns one metric by given type and name
-func (h *Handler) RetrieveMetric(w http.ResponseWriter, r *http.Request) {
+func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	if mtype == "" || mname == "" {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
-		res, err := h.DB.ReadByParams(mtype, mname)
+		res, err := d.DB.ReadByParams(mtype, mname)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			log.Println(err)
@@ -56,7 +73,7 @@ func (h *Handler) RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 // Pre-cond: given correct type, name and val of metrics
 //
 // Post-cond: correct metrics saved on server
-func (h *Handler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
+func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
@@ -67,7 +84,7 @@ func (h *Handler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		code := isUpdatePathCorrect(mtype, mname, val)
 		if code == http.StatusOK {
-			if err := h.DB.Write(mtype, mname, val); err != nil {
+			if err := d.DB.Write(mtype, mname, val); err != nil {
 				log.Println(err)
 			}
 			w.WriteHeader(http.StatusOK)
