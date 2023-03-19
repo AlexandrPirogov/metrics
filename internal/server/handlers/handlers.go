@@ -37,7 +37,7 @@ type DefaultHandler struct {
 }
 
 // RetrieveMetric return all contained metrics
-func (h *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
+func (d *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	if mtype == "" || mname == "" {
@@ -45,7 +45,7 @@ func (h *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request)
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(h.DB.Read()))
+		w.Write([]byte(d.DB.Read()))
 	}
 }
 
