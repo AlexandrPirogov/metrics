@@ -3,15 +3,20 @@ package handlers
 import (
 	"log"
 	"memtracker/internal/memtrack/metrics"
-	"memtracker/internal/server/db"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
 
+type MetricsStorer interface {
+	Read() string
+	ReadByParams(mtype string, mname string) (string, error)
+	Write(mtype string, mname string, val string) error
+}
+
 type Handler struct {
-	DB db.Storable
+	DB MetricsStorer
 }
 
 // RetrieveMetric return all contained metrics
