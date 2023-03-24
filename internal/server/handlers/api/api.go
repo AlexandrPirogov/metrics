@@ -48,11 +48,19 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		if metric.MType == "gauge" {
-			d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
-			w.WriteHeader(http.StatusCreated)
+			if metric.Value == nil {
+				w.WriteHeader(http.StatusBadRequest)
+			} else {
+				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%f", *metric.Value))
+				w.WriteHeader(http.StatusCreated)
+			}
 		} else if metric.MType == "counter" {
-			d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%f", *metric.Value))
-			w.WriteHeader(http.StatusCreated)
+			if metric.Delta == nil {
+				w.WriteHeader(http.StatusBadRequest)
+			} else {
+				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
+				w.WriteHeader(http.StatusCreated)
+			}
 
 		} else {
 			w.WriteHeader(http.StatusNotImplemented)
