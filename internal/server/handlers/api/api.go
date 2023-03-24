@@ -53,6 +53,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%f", *metric.Value))
 				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte("{\"a\":\"b\"}"))
 			}
 		} else if metric.MType == "counter" {
 			if metric.Delta == nil {
@@ -60,6 +61,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
 				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte("{\"a\":\"b\"}"))
 			}
 
 		} else {

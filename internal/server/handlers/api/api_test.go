@@ -61,6 +61,7 @@ func TestCorrectGaugeUpdateHandler(t *testing.T) {
 			defer resp.Body.Close()
 			log.Printf("%v", resp)
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
+			assert.Greater(t, resp.ContentLength, int64(0))
 		})
 	}
 }
@@ -137,7 +138,7 @@ func TestCorrectCounterUpdateHandler(t *testing.T) {
 	}
 
 	for _, actual := range data {
-		t.Run("Correct gauge", func(t *testing.T) {
+		t.Run("Correct counter", func(t *testing.T) {
 			js, err := json.Marshal(actual.Metric)
 			if err != nil {
 				t.Errorf("got error while marshal json %v", err)
@@ -147,6 +148,7 @@ func TestCorrectCounterUpdateHandler(t *testing.T) {
 			defer resp.Body.Close()
 			log.Printf("%v", resp)
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
+			assert.Greater(t, resp.ContentLength, int64(0))
 		})
 	}
 }
@@ -184,7 +186,7 @@ func TestIncorrectCounterUpdateHandler(t *testing.T) {
 	}
 
 	for _, actual := range data {
-		t.Run("Correct gauge", func(t *testing.T) {
+		t.Run("Correct counter", func(t *testing.T) {
 			js, err := json.Marshal(actual.Metric)
 			if err != nil {
 				t.Errorf("got error while marshal json %v", err)
