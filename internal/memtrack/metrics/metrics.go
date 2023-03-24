@@ -13,6 +13,14 @@ import (
 	"strings"
 )
 
+// Serializable representation of metric
+type Metrics struct {
+	ID    string   `json:"id"`             //Metric name
+	MType string   `json:"type"`           // Metric type: gauge or counter
+	Delta *int64   `json:"delta,omitempty` //Metric's val if passing counter
+	Value *float64 `json:"value,omitempty` //Metric's val if passing gauge
+}
+
 // Metricalbes entities should update own metrics by Read() errpr method
 // Read returns nil if success otherwise error
 type Metricable interface {
