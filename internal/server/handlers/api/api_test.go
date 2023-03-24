@@ -44,7 +44,7 @@ func TestSuccessGaugeUpdateHandler(t *testing.T) {
 		data = append(data, Payload{
 			StatusCode: http.StatusCreated,
 			Metric: metrics.Metrics{
-				ID:    "1",
+				//ID:    "1",
 				MType: "gauge",
 				Delta: &delta,
 				Value: nil,
@@ -65,5 +65,4 @@ func TestSuccessGaugeUpdateHandler(t *testing.T) {
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
 		})
 	}
-
 }
