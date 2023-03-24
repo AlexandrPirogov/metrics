@@ -36,7 +36,7 @@ type Payload struct {
 	Metric     metrics.Metrics
 }
 
-func TestSuccessGaugeUpdateHandler(t *testing.T) {
+func TestCorrectGaugeUpdateHandler(t *testing.T) {
 	deltas := []int64{-1, 0, 1}
 	//values := []float64{-1.1, 0, 1.1}
 	data := []Payload{}
@@ -62,6 +62,54 @@ func TestSuccessGaugeUpdateHandler(t *testing.T) {
 			resp := executeUpdateRequest(js)
 			defer resp.Body.Close()
 			log.Printf("%v", resp)
+			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
+		})
+	}
+}
+
+func TestIncorrectGaugeUpdateHandler(t *testing.T) {
+	deltas := []int64{-1, 0, 1}
+	//values := []float64{-1.1, 0, 1.1}
+	data := []Payload{
+		{
+			StatusCode: http.StatusBadRequest,
+			Metric: metrics.Metrics{
+				//ID:    "1",
+				MType: "gauge1",
+				Delta: &deltas[0],
+				Value: nil,
+			},
+		},
+		{
+			StatusCode: http.StatusBadRequest,
+			Metric: metrics.Metrics{
+				//ID:    "1",
+				MType: "",
+				Delta: &deltas[0],
+				Value: nil,
+			},
+		},
+		{
+			StatusCode: http.StatusBadRequest,
+			Metric: metrics.Metrics{
+				//ID:    "1",
+				MType: "gauge",
+				Delta: nil,
+				Value: nil,
+			},
+		},
+	}
+
+	for _, actual := range data {
+		t.Run("Correct gauge", func(t *testing.T) {
+			js, err := json.Marshal(actual)
+			if err != nil {
+				t.Errorf("got error while marshal json %v", err)
+			}
+
+			resp := executeUpdateRequest(js)
+			defer resp.Body.Close()
+
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
 		})
 	}
