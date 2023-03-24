@@ -11,14 +11,13 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/stretchr/testify/assert"
 )
 
 func executeUpdateRequest(body []byte) *http.Response {
 	handler := &DefaultHandler{DB: &db.DB{Storage: db.MemStoageDB()}}
 	r := chi.NewRouter()
-	r.Use(middleware.SetHeader("Content-Type", "application/json"))
+	//r.Use(middleware.SetHeader("Content-Type", "application/json"))
 	r.Post("/update/", handler.UpdateHandler)
 
 	ts := httptest.NewServer(r)
@@ -44,7 +43,7 @@ func TestCorrectGaugeUpdateHandler(t *testing.T) {
 		data = append(data, Payload{
 			StatusCode: http.StatusCreated,
 			Metric: metrics.Metrics{
-				//ID:    "1",
+				ID:    "some",
 				MType: "gauge",
 				Delta: &delta,
 				Value: nil,
@@ -54,7 +53,7 @@ func TestCorrectGaugeUpdateHandler(t *testing.T) {
 
 	for _, actual := range data {
 		t.Run("Correct gauge", func(t *testing.T) {
-			js, err := json.Marshal(actual)
+			js, err := json.Marshal(actual.Metric)
 			if err != nil {
 				t.Errorf("got error while marshal json %v", err)
 			}
@@ -102,7 +101,7 @@ func TestIncorrectGaugeUpdateHandler(t *testing.T) {
 
 	for _, actual := range data {
 		t.Run("Correct gauge", func(t *testing.T) {
-			js, err := json.Marshal(actual)
+			js, err := json.Marshal(actual.Metric)
 			if err != nil {
 				t.Errorf("got error while marshal json %v", err)
 			}
