@@ -41,16 +41,16 @@ type Payload struct {
 }
 
 func TestCorrectGaugeUpdateHandler(t *testing.T) {
-	values := []float64{-1.1, 0, 1.1}
+	values := []float64{-1.1, 0, 1.1, 1.999}
 	data := []Payload{}
-	for _, value := range values {
+	for i := range values {
 		data = append(data, Payload{
 			StatusCode: http.StatusCreated,
 			Metric: metrics.Metrics{
 				ID:    "some",
 				MType: "gauge",
 				Delta: nil,
-				Value: &value,
+				Value: &values[i],
 			},
 		})
 	}
@@ -65,9 +65,20 @@ func TestCorrectGaugeUpdateHandler(t *testing.T) {
 
 			resp := executeUpdateRequest(server, js)
 			defer resp.Body.Close()
-			log.Printf("%v", resp)
+
+			var respJs metrics.Metrics
+			buffer, err := io.ReadAll(resp.Body)
+			if err != nil {
+				log.Fatalf("%v", err)
+			}
+			err = json.Unmarshal(buffer, &respJs)
+			if err != nil {
+				log.Fatalf("error while unmarshal response gauge %v", err)
+			}
+			log.Printf("here %v", respJs)
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
 			assert.Greater(t, resp.ContentLength, int64(0))
+			assert.EqualValues(t, *actual.Metric.Value, *respJs.Value)
 		})
 	}
 }
