@@ -133,7 +133,7 @@ func TestIncorrectGaugeUpdateHandler(t *testing.T) {
 func TestCorrectCounterUpdateHandler(t *testing.T) {
 	deltas := []int64{0, 1, 2, 3, 4, 5}
 	data := []Payload{}
-	for i, _ := range deltas {
+	for i := range deltas {
 		data = append(data, Payload{
 			StatusCode: http.StatusCreated,
 			Metric: metrics.Metrics{
