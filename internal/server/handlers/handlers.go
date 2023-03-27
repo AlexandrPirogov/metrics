@@ -11,13 +11,19 @@ import (
 
 type MetricsStorer interface {
 	// Reads all metrics and returns their string representation
-	Read() string
+	Read() []byte
 	// Read metrics with given type and name.
 	//
 	// Pre-cond: Given correct mtype and mname
 	//
 	// Post-cond: Returns suitable metrics according to given mtype and mname
-	ReadByParams(mtype string, mname string) (string, error)
+	ReadByParams(mtype string, mname string) ([]byte, error)
+	// Read metrics value with given type and name.
+	//
+	// Pre-cond: Given correct mtype and mname
+	//
+	// Post-cond: Returns current metrics value according to given mtype and mname
+	ReadValueByParams(mtype string, mname string) ([]byte, error)
 	// Writes metric in store
 	//
 	// Pre-cond: given correct type name and value of metric
@@ -57,7 +63,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
-		res, err := d.DB.ReadByParams(mtype, mname)
+		res, err := d.DB.ReadValueByParams(mtype, mname)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			log.Println(err)
