@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/server/db"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func executeUpdateRequest(body []byte) *http.Response {
@@ -137,7 +139,9 @@ func TestCorrectCounterUpdateHandler(t *testing.T) {
 		})
 	}
 
+	var updatedMetric int64 = 0
 	for _, actual := range data {
+		updatedMetric += *actual.Metric.Delta
 		t.Run("Correct counter", func(t *testing.T) {
 			js, err := json.Marshal(actual.Metric)
 			if err != nil {
@@ -147,8 +151,20 @@ func TestCorrectCounterUpdateHandler(t *testing.T) {
 			resp := executeUpdateRequest(js)
 			defer resp.Body.Close()
 			log.Printf("%v", resp)
-			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
-			assert.Greater(t, resp.ContentLength, int64(0))
+
+			var respJs metrics.Metrics
+			buffer, err := io.ReadAll(resp.Body)
+			if err != nil {
+				log.Fatalf("%v", err)
+			}
+
+			if err := json.Unmarshal(buffer, &respJs); err != nil {
+				log.Fatalf("%v", err)
+			} else {
+				assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
+				assert.Greater(t, resp.ContentLength, int64(0))
+				require.EqualValues(t, updatedMetric, respJs.Delta)
+			}
 		})
 	}
 }
