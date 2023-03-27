@@ -6,6 +6,8 @@ import (
 	"log"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type MetricsStorer interface {
@@ -47,7 +49,6 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 			if metric.Value == nil {
 				w.WriteHeader(http.StatusBadRequest)
 			} else {
-
 				res, err := d.DB.ReadByParams(metric.MType, metric.ID)
 				if err != nil {
 					w.WriteHeader(http.StatusNotFound)
@@ -55,18 +56,20 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 				} else {
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte(res))
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("{\"a\":\"b\"}"))
 				}
-
 			}
 		} else if metric.MType == "counter" {
 			if metric.Delta == nil {
 				w.WriteHeader(http.StatusBadRequest)
 			} else {
-				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
-				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte("{\"a\":\"b\"}"))
+				res, err := d.DB.ReadByParams(metric.MType, metric.ID)
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					log.Println(err)
+				} else {
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(res))
+				}
 			}
 
 		} else {
@@ -116,5 +119,18 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.WriteHeader(http.StatusNotImplemented)
 		}
+	}
+}
+
+// RetrieveMetric return all contained metrics
+func (d *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
+	mtype := chi.URLParam(r, "mtype")
+	mname := chi.URLParam(r, "mname")
+	if mtype == "" || mname == "" {
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(d.DB.Read()))
 	}
 }
