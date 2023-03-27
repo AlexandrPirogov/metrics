@@ -21,14 +21,23 @@ func createTestServer() *httptest.Server {
 	r := chi.NewRouter()
 	//r.Use(middleware.SetHeader("Content-Type", "application/json"))
 	r.Post("/update/", handler.UpdateHandler)
+	r.Post("/value/", handler.RetrieveMetric)
 	return httptest.NewServer(r)
 
 }
 
 func executeUpdateRequest(ts *httptest.Server, body []byte) *http.Response {
-
 	// Read about http unit testing to eliminate double "application/json"
 	resp, err := http.Post(ts.URL+"/update/", "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return nil
+	}
+	return resp
+}
+
+func executeGetValueRequest(ts *httptest.Server, body []byte) *http.Response {
+	// Read about http unit testing to eliminate double "application/json"
+	resp, err := http.Post(ts.URL+"/value/", "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return nil
 	}
@@ -38,6 +47,105 @@ func executeUpdateRequest(ts *httptest.Server, body []byte) *http.Response {
 type Payload struct {
 	StatusCode int
 	Metric     metrics.Metrics
+}
+
+func TestRetrieveGaugeMetric(t *testing.T) {
+	values := []float64{-1.1, 0, 1.1, 1.999}
+	data := []Payload{}
+	for i := range values {
+		data = append(data, Payload{
+			StatusCode: http.StatusCreated,
+			Metric: metrics.Metrics{
+				ID:    "some",
+				MType: "gauge",
+				Delta: nil,
+				Value: &values[i],
+			},
+		})
+	}
+	server := createTestServer()
+	defer server.Close()
+	for _, expected := range data {
+		t.Run("Correct gauge", func(t *testing.T) {
+			js, err := json.Marshal(expected.Metric)
+			if err != nil {
+				t.Errorf("got error while marshal json %v", err)
+			}
+
+			postResp := executeUpdateRequest(server, js)
+			defer postResp.Body.Close()
+
+			getResp := executeGetValueRequest(server, js)
+			defer getResp.Body.Close()
+
+			body, err := io.ReadAll(getResp.Body)
+			if err != nil {
+				log.Fatalf("error while reading resp %v", err)
+			}
+			var actual metrics.Metrics
+			err = json.Unmarshal(body, &actual)
+			if err != nil {
+				log.Fatalf("error while unmarshal %v", err)
+			}
+			assert.NotNil(t, actual.Value)
+		})
+	}
+}
+
+func TestCounterGaugeMetric(t *testing.T) {
+	deltas := []int64{0, 1, 2, 3, 4, 5}
+	var expectedCounter int64 = 0
+	data := []Payload{}
+	for i := range deltas {
+		data = append(data, Payload{
+			StatusCode: http.StatusCreated,
+			Metric: metrics.Metrics{
+				ID:    "some",
+				MType: "counter",
+				Delta: &deltas[i],
+				Value: nil,
+			},
+		})
+		expectedCounter += deltas[i]
+	}
+	server := createTestServer()
+	defer server.Close()
+	for _, actual := range data {
+		t.Run("Correct counter", func(t *testing.T) {
+			js, err := json.Marshal(actual.Metric)
+			if err != nil {
+				t.Errorf("got error while marshal json %v", err)
+			}
+
+			resp := executeUpdateRequest(server, js)
+			defer resp.Body.Close()
+		})
+	}
+	p := Payload{
+		StatusCode: http.StatusCreated,
+		Metric: metrics.Metrics{
+			ID:    "some",
+			MType: "counter",
+			Delta: nil,
+			Value: nil,
+		},
+	}
+
+	bytes, _ := json.Marshal(p)
+	resp := executeGetValueRequest(server, bytes)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	var actual Payload
+	err = json.Unmarshal(body, &actual)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	assert.Equal(t, expectedCounter, *actual.Metric.Delta)
 }
 
 func TestCorrectGaugeUpdateHandler(t *testing.T) {
