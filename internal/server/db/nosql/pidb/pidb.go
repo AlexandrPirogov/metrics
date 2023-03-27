@@ -35,9 +35,9 @@ func (d Metric) Json() []byte {
 	if d.Type == "counter" {
 		val, _ := strconv.ParseInt(d.Val, 10, 64)
 		tmp := struct {
-			Name  string `json:"id"`                //Metric name
-			Type  string `json:"type"`              // Metric type: gauge or counter
-			Delta *int64 `json:"delta","omitempty"` //Metric's val if passing counter
+			Name  string `json:"id"`    //Metric name
+			Type  string `json:"type"`  // Metric type: gauge or counter
+			Delta *int64 `json:"delta"` //Metric's val if passing counter
 		}{
 			Name:  d.Name,
 			Type:  d.Type,
@@ -50,9 +50,9 @@ func (d Metric) Json() []byte {
 	} else {
 		val, _ := strconv.ParseFloat(d.Val, 64)
 		tmp := struct {
-			Name string  `json:"id"`                //Metric name
-			Type string  `json:"type"`              // Metric type: gauge or counter
-			Val  float64 `json:"value","omitempty"` //Metric's val if passing gauge
+			Name string  `json:"id"`    //Metric name
+			Type string  `json:"type"`  // Metric type: gauge or counter
+			Val  float64 `json:"value"` //Metric's val if passing gauge
 		}{
 			Name: d.Name,
 			Type: d.Type,
