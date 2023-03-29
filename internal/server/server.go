@@ -12,10 +12,10 @@ import (
 
 func NewMetricServer(addr string, h handlers.MetricsHandler, ctx context.Context) *http.Server {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	//	r.Use(middleware.Logger)
 	r.Use(middleware.SetHeader("Content-Type", "application/json"))
-	r.Post("/update/{mtype}/{mname}/{val}", h.UpdateHandler)
-	r.Get("/value/{mtype}/{mname}", h.RetrieveMetric)
+	r.Post("/update/", h.UpdateHandler)
+	r.Post("/value/", h.RetrieveMetric)
 	r.Get("/", h.RetrieveMetrics)
 	return &http.Server{
 		Addr:        ":8080",

@@ -66,7 +66,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 		res, err := d.DB.ReadValueByParams(mtype, mname)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
-			log.Println(err)
+
 		} else {
 			w.WriteHeader(http.StatusOK)
 		}

@@ -46,8 +46,8 @@ func (d *DB) ReadByParams(mtype, mname string) ([]byte, error) {
 
 // initDB initialize map for MemStorage
 func MemStoageDB() pidb.MemStorage {
-	var imap = map[string]map[string]pidb.Metric{}
-	imap["gauge"] = map[string]pidb.Metric{}
-	imap["counter"] = map[string]pidb.Metric{}
+	var imap = map[string]map[string][]byte{}
+	imap["gauge"] = map[string][]byte{}
+	imap["counter"] = map[string][]byte{}
 	return pidb.MemStorage{Mutex: sync.RWMutex{}, Metrics: imap}
 }

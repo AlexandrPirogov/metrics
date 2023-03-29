@@ -8,63 +8,12 @@ import (
 	"memtracker/internal/memtrack/metrics"
 	"strconv"
 	"sync"
-	"time"
 )
 
 // Local db to imitate storage of metrics
 type MemStorage struct {
 	Mutex   sync.RWMutex
-	Metrics map[string]map[string]Metric
-}
-
-// Wrapped JSON
-type Metric struct {
-	Time time.Time
-	Name string `json:"id"`
-	Type string `json:"type"`
-	Val  string
-}
-
-func (d Metric) String() string {
-	return fmt.Sprintf("Time: %s, Type: %s, Name: %s, Val: %s", d.Time, d.Type, d.Name, d.Val)
-}
-
-func (d Metric) Json() []byte {
-	bytes := make([]byte, 0)
-	var err error
-	if d.Type == "counter" {
-		val, _ := strconv.ParseInt(d.Val, 10, 64)
-		tmp := struct {
-			Name  string `json:"id"`    //Metric name
-			Type  string `json:"type"`  // Metric type: gauge or counter
-			Delta *int64 `json:"delta"` //Metric's val if passing counter
-		}{
-			Name:  d.Name,
-			Type:  d.Type,
-			Delta: &val,
-		}
-		bytes, err = json.Marshal(tmp)
-		if err != nil {
-			return []byte{}
-		}
-	} else {
-		val, _ := strconv.ParseFloat(d.Val, 64)
-		tmp := struct {
-			Name string  `json:"id"`    //Metric name
-			Type string  `json:"type"`  // Metric type: gauge or counter
-			Val  float64 `json:"value"` //Metric's val if passing gauge
-		}{
-			Name: d.Name,
-			Type: d.Type,
-			Val:  val,
-		}
-		bytes, err = json.Marshal(tmp)
-		if err != nil {
-			return []byte{}
-		}
-	}
-	log.Printf("Marsahled json into %s", bytes)
-	return bytes
+	Metrics map[string]map[string][]byte
 }
 
 // Select returns code and metric in string representation with given name and type
@@ -79,7 +28,7 @@ func (p *MemStorage) Select(mtype, mname string) ([]byte, error) {
 	defer p.Mutex.Unlock()
 	res, err := []byte{}, fmt.Errorf("not found")
 	if elem, ok := p.Metrics[mtype][mname]; ok {
-		return elem.Json(), nil
+		return elem, nil
 	}
 	return res, err
 }
@@ -91,13 +40,15 @@ func (p *MemStorage) ReadAllMetrics() []byte {
 	metrics := make([]byte, 0)
 	for _, types := range p.Metrics {
 		for _, doc := range types {
-			metrics = append(metrics, doc.Json()...)
+			metrics = append(metrics, doc...)
 		}
 	}
 	return metrics
 }
 
 func (p *MemStorage) ReadValueByParams(mtype, mname string) ([]byte, error) {
+	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
 	js, err := p.Select(mtype, mname)
 	var m metrics.Metrics
 	err = json.Unmarshal(js, &m)
@@ -133,25 +84,63 @@ func (p *MemStorage) InsertMetric(mtype, name, val string) error {
 //
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
-func (p *MemStorage) insertJSON(mtype, name string, val string) {
+func (p *MemStorage) insertJSON(mtype, name string, val string) []byte {
 	p.Mutex.Lock()
-	defer p.Mutex.Unlock()
 	document := p.newJSON(mtype, name, val)
 	p.Metrics[mtype][name] = document
+	p.Mutex.Unlock()
+
+	log.Println("counter----counter")
+	for _, v := range p.Metrics["counter"] {
+		log.Printf("%s", v)
+	}
+	log.Println("counter----counter")
+	return document
 }
 
 // Pre-cond: given mtype, name and val of metric.
 // mtype and name should be one of from package metrics.
 //
 // Post-condition: creats new Metric instance or returns error
-func (p *MemStorage) newJSON(mtype, name, val string) Metric {
+func (p *MemStorage) newJSON(mtype, name, val string) []byte {
 	if mtype == "counter" {
+		log.Printf("Got counter :%s, %s, %s", mtype, name, val)
 		if doc, ok := p.Metrics[mtype][name]; ok {
-			docVal, _ := strconv.ParseInt(doc.Val, 10, 64)
-			valToAdd, _ := strconv.ParseInt(val, 10, 64)
-			val = fmt.Sprintf("%d", valToAdd+docVal)
-			log.Printf("INcreased val %s", val)
+			var toUpdate metrics.Metrics
+			err := json.Unmarshal(doc, &toUpdate)
+			if err != nil {
+
+			}
+			delta := *toUpdate.Delta
+			toAdd, _ := strconv.ParseInt(val, 10, 64)
+			delta += toAdd
+			toUpdate.Delta = &delta
+			toUpdate.ID = name
+			toUpdate.MType = mtype
+			bytes, err := json.Marshal(toUpdate)
+			p.Metrics[mtype][name] = bytes
+			return bytes
+		} else {
+			var toUpdate metrics.Metrics
+			json.Unmarshal(doc, &toUpdate)
+			toAdd, _ := strconv.ParseInt(val, 10, 64)
+			toUpdate.Delta = &toAdd
+			toUpdate.ID = name
+			toUpdate.MType = mtype
+			bytes, _ := json.Marshal(toUpdate)
+			p.Metrics[mtype][name] = bytes
+			return bytes
 		}
 	}
-	return Metric{time.Now(), name, mtype, val}
+
+	toInsert := metrics.Metrics{
+		ID:    name,
+		MType: mtype,
+		Delta: nil,
+	}
+
+	Val, _ := strconv.ParseFloat(val, 64)
+	toInsert.Value = &Val
+	bytes, _ := json.Marshal(toInsert)
+	return bytes
 }

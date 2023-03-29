@@ -3,8 +3,11 @@
 package memtrack
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/json"
+	"io"
 	"log"
+	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/memtrack/trackers"
 	"net/http"
 	"time"
@@ -47,17 +50,68 @@ func (h httpMemTracker) ReadAndSend(readInterval time.Duration, sendInterval tim
 // Sends metrics to given host
 func (h httpMemTracker) send() {
 	for _, metric := range h.MetricsContainer.Metrics {
-		metrics := metric.AsMap()
-		for k, v := range metrics {
-			url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, k, v)
-			log.Printf("Sending metrics to: %s\n", url)
-			resp, err := h.client.Post(url, "text/plain", nil)
+		mapMetrics := metric.AsMap()
+		if metric.String() == "gauge" {
+			for k, v := range mapMetrics {
+				val := float64(v.(float64))
+				toMarsal := metrics.Metrics{
+					ID:    k,
+					MType: metric.String(),
+					Value: &val,
+				}
+				url := "http://" + h.Host + "/update/"
 
-			if err != nil {
-				log.Print(err)
+				js, err := json.Marshal(toMarsal)
+				if err != nil {
+					log.Printf("%v", err)
+					continue
+				}
+				buffer := bytes.NewBuffer(js)
+				resp, err := h.client.Post(url, "application/json", buffer)
+
+				if err != nil {
+					log.Print(err)
+					continue
+				}
+				defer resp.Body.Close()
+
+				_, err = io.ReadAll(resp.Body)
+				if err != nil {
+					log.Printf("error while readall %v", err)
+				}
 			}
-			defer resp.Body.Close()
+		} else {
+			for k, v := range mapMetrics {
+				val := float64(v.(float64))
+				del := int64(val)
+				toMarsal := metrics.Metrics{
+					ID:    k,
+					MType: metric.String(),
+					Delta: &del,
+				}
+				url := "http://" + h.Host + "/update/"
+
+				js, err := json.Marshal(toMarsal)
+				if err != nil {
+					log.Printf("%v", err)
+					continue
+				}
+				buffer := bytes.NewBuffer(js)
+				resp, err := h.client.Post(url, "application/json", buffer)
+
+				if err != nil {
+					log.Print(err)
+					continue
+				}
+				defer resp.Body.Close()
+
+				_, err = io.ReadAll(resp.Body)
+				if err != nil {
+					log.Printf("error while readall %v", err)
+				}
+			}
 		}
+
 	}
 
 }

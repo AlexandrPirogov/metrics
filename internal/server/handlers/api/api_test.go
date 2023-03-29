@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,20 +20,16 @@ import (
 func createTestServer() *httptest.Server {
 	handler := &DefaultHandler{DB: &db.DB{Storage: db.MemStoageDB()}}
 	r := chi.NewRouter()
-	//r.Use(middleware.SetHeader("Content-Type", "application/json"))
+	r.Use(middleware.SetHeader("Content-Type", "application/json"))
 	r.Post("/update/", handler.UpdateHandler)
 	r.Post("/value/", handler.RetrieveMetric)
 	return httptest.NewServer(r)
 
 }
 
-func executeUpdateRequest(ts *httptest.Server, body []byte) *http.Response {
+func executeUpdateRequest(ts *httptest.Server, body []byte) (*http.Response, error) {
 	// Read about http unit testing to eliminate double "application/json"
-	resp, err := http.Post(ts.URL+"/update/", "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return nil
-	}
-	return resp
+	return http.Post(ts.URL+"/update/", "application/json", bytes.NewBuffer(body))
 }
 
 func executeGetValueRequest(ts *httptest.Server, body []byte) *http.Response {
@@ -50,13 +47,13 @@ type Payload struct {
 }
 
 func TestRetrieveGaugeMetric(t *testing.T) {
-	values := []float64{-1.1, 0, 1.1, 1.999}
+	values := []float64{-1.123456789, 0.9087865431, 1.112233445, 1.123456789}
 	data := []Payload{}
 	for i := range values {
 		data = append(data, Payload{
 			StatusCode: http.StatusCreated,
 			Metric: metrics.Metrics{
-				ID:    "some",
+				ID:    "Some val",
 				MType: "gauge",
 				Delta: nil,
 				Value: &values[i],
@@ -72,35 +69,44 @@ func TestRetrieveGaugeMetric(t *testing.T) {
 				t.Errorf("got error while marshal json %v", err)
 			}
 
-			postResp := executeUpdateRequest(server, js)
+			postResp, err := executeUpdateRequest(server, js)
+			assert.Nil(t, err)
+			postBody, _ := io.ReadAll(postResp.Body)
+			var postJsBot metrics.Metrics
+
+			err = json.Unmarshal(postBody, &postJsBot)
 			defer postResp.Body.Close()
+			assert.Nil(t, err)
 
 			getResp := executeGetValueRequest(server, js)
 			defer getResp.Body.Close()
 
 			body, err := io.ReadAll(getResp.Body)
 			if err != nil {
-				log.Fatalf("error while reading resp %v", err)
+				t.Errorf("error while reading resp %v", err)
 			}
 			var actual metrics.Metrics
+			log.Println("Got response starts marshal")
 			err = json.Unmarshal(body, &actual)
 			if err != nil {
-				log.Fatalf("error while unmarshal %v", err)
+				t.Errorf("error while unmarshal %v", err)
 			}
 			assert.NotNil(t, actual.Value)
+			assert.Nil(t, actual.Delta)
+			assert.EqualValues(t, *expected.Metric.Value, *actual.Value)
 		})
 	}
 }
 
-func TestCounterGaugeMetric(t *testing.T) {
-	deltas := []int64{0, 1, 2, 3, 4, 5}
+func TestCorrectCounterMetric(t *testing.T) {
+	deltas := []int64{1, 1, 1, 1, 1, 1, 1, 1}
 	var expectedCounter int64 = 0
 	data := []Payload{}
 	for i := range deltas {
 		data = append(data, Payload{
-			StatusCode: http.StatusCreated,
+			StatusCode: http.StatusOK,
 			Metric: metrics.Metrics{
-				ID:    "some",
+				ID:    "PollCount",
 				MType: "counter",
 				Delta: &deltas[i],
 				Value: nil,
@@ -108,6 +114,7 @@ func TestCounterGaugeMetric(t *testing.T) {
 		})
 		expectedCounter += deltas[i]
 	}
+
 	server := createTestServer()
 	defer server.Close()
 	for _, actual := range data {
@@ -117,43 +124,54 @@ func TestCounterGaugeMetric(t *testing.T) {
 				t.Errorf("got error while marshal json %v", err)
 			}
 
-			resp := executeUpdateRequest(server, js)
+			resp, err := executeUpdateRequest(server, js)
+			require.Nil(t, err)
 			defer resp.Body.Close()
+
+			var respJs metrics.Metrics
+			buffer, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Errorf("got error while reading body %v", err)
+			}
+			err = json.Unmarshal(buffer, &respJs)
+			assert.Nil(t, err)
+
 		})
 	}
 	p := Payload{
 		StatusCode: http.StatusCreated,
 		Metric: metrics.Metrics{
-			ID:    "some",
+			ID:    "PollCount",
 			MType: "counter",
 			Delta: nil,
 			Value: nil,
 		},
 	}
 
-	bytes, _ := json.Marshal(p)
+	bytes, _ := json.Marshal(p.Metric)
 	resp := executeGetValueRequest(server, bytes)
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("%v", err)
+		t.Errorf("%v", err)
 	}
 
-	var actual Payload
+	var actual metrics.Metrics
 	err = json.Unmarshal(body, &actual)
 	if err != nil {
-		log.Fatalf("%v", err)
+		t.Errorf("%v", err)
 	}
-	assert.Equal(t, expectedCounter, *actual.Metric.Delta)
+	assert.Equal(t, expectedCounter, *actual.Delta)
 }
 
 func TestCorrectGaugeUpdateHandler(t *testing.T) {
-	values := []float64{-1.1, 0, 1.1, 1.999}
+	values := []float64{-1.32198, 0, 1.1, 1.12345}
 	data := []Payload{}
 	for i := range values {
 		data = append(data, Payload{
-			StatusCode: http.StatusCreated,
+			StatusCode: http.StatusOK,
 			Metric: metrics.Metrics{
 				ID:    "some",
 				MType: "gauge",
@@ -162,6 +180,7 @@ func TestCorrectGaugeUpdateHandler(t *testing.T) {
 			},
 		})
 	}
+	//qwes
 	server := createTestServer()
 	defer server.Close()
 	for _, actual := range data {
@@ -171,22 +190,19 @@ func TestCorrectGaugeUpdateHandler(t *testing.T) {
 				t.Errorf("got error while marshal json %v", err)
 			}
 
-			resp := executeUpdateRequest(server, js)
-			defer resp.Body.Close()
-
+			resp, err := executeUpdateRequest(server, js)
+			require.Nil(t, err)
 			var respJs metrics.Metrics
 			buffer, err := io.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatalf("%v", err)
-			}
+
 			err = json.Unmarshal(buffer, &respJs)
-			if err != nil {
-				log.Fatalf("error while unmarshal response gauge %v", err)
-			}
-			log.Printf("here %v", respJs)
+
+			assert.Nil(t, err)
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
 			assert.Greater(t, resp.ContentLength, int64(0))
 			assert.EqualValues(t, *actual.Metric.Value, *respJs.Value)
+			assert.Nil(t, actual.Metric.Delta)
+			defer resp.Body.Close()
 		})
 	}
 }
@@ -241,7 +257,8 @@ func TestIncorrectGaugeUpdateHandler(t *testing.T) {
 				t.Errorf("got error while marshal json %v", err)
 			}
 
-			resp := executeUpdateRequest(server, js)
+			resp, err := executeUpdateRequest(server, js)
+			require.Nil(t, err)
 			defer resp.Body.Close()
 
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
@@ -254,7 +271,7 @@ func TestCorrectCounterUpdateHandler(t *testing.T) {
 	data := []Payload{}
 	for i := range deltas {
 		data = append(data, Payload{
-			StatusCode: http.StatusCreated,
+			StatusCode: http.StatusOK,
 			Metric: metrics.Metrics{
 				ID:    "some",
 				MType: "counter",
@@ -274,23 +291,23 @@ func TestCorrectCounterUpdateHandler(t *testing.T) {
 				t.Errorf("got error while marshal json %v", err)
 			}
 
-			resp := executeUpdateRequest(server, js)
+			resp, err := executeUpdateRequest(server, js)
+			require.Nil(t, err)
 			defer resp.Body.Close()
-			log.Printf("%v", resp)
 
 			var respJs metrics.Metrics
 			buffer, err := io.ReadAll(resp.Body)
 			if err != nil {
-				log.Fatalf("%v", err)
+				t.Errorf("got error while reading body %v", err)
 			}
+			err = json.Unmarshal(buffer, &respJs)
+			assert.Nil(t, err)
 
-			if err := json.Unmarshal(buffer, &respJs); err != nil {
-				log.Fatalf("%v", err)
-			} else {
-				assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
-				assert.Greater(t, resp.ContentLength, int64(0))
-				require.EqualValues(t, updatedMetric, *respJs.Delta)
-			}
+			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
+			assert.Greater(t, resp.ContentLength, int64(0))
+			require.EqualValues(t, updatedMetric, *respJs.Delta)
+			assert.Equal(t, true, true)
+
 		})
 	}
 }
@@ -336,7 +353,8 @@ func TestIncorrectCounterUpdateHandler(t *testing.T) {
 				t.Errorf("got error while marshal json %v", err)
 			}
 
-			resp := executeUpdateRequest(server, js)
+			resp, err := executeUpdateRequest(server, js)
+			require.Nil(t, err)
 			defer resp.Body.Close()
 
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)

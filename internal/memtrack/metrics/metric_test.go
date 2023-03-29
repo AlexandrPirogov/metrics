@@ -10,7 +10,7 @@ import (
 
 func TestMetricSerialize(t *testing.T) {
 	deltaValues := []int64{-1, 0, 1}
-	valueValues := []float64{-1.1, 0, 1.1}
+	valueValues := []float64{-1.123456789123456789123456789, 0.123456789123546, 1.123456789123546}
 	data := []struct {
 		Name     string
 		Expected Metrics
@@ -21,8 +21,8 @@ func TestMetricSerialize(t *testing.T) {
 			Expected: Metrics{
 				ID:    "1",
 				MType: "gauge",
-				Delta: &deltaValues[0],
-				Value: nil,
+				Delta: nil,
+				Value: &valueValues[0],
 			},
 		},
 		//Correct counters
@@ -31,8 +31,8 @@ func TestMetricSerialize(t *testing.T) {
 			Expected: Metrics{
 				ID:    "1",
 				MType: "counter",
-				Delta: nil,
-				Value: &valueValues[0],
+				Delta: &deltaValues[0],
+				Value: nil,
 			},
 		},
 	}

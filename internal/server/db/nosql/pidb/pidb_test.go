@@ -96,9 +96,9 @@ func TestWriteIncorrectCountersMetrics(t *testing.T) {
 	}
 }
 
-func initDB() map[string]map[string]Metric {
-	var imap = map[string]map[string]Metric{}
-	imap["gauge"] = map[string]Metric{}
-	imap["counter"] = map[string]Metric{}
+func initDB() map[string]map[string][]byte {
+	var imap = map[string]map[string][]byte{}
+	imap["gauge"] = map[string][]byte{}
+	imap["counter"] = map[string][]byte{}
 	return imap
 }
