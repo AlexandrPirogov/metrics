@@ -86,15 +86,9 @@ func (p *MemStorage) InsertMetric(mtype, name, val string) error {
 // Returns 0 if successed. Otherwise means fail
 func (p *MemStorage) insertJSON(mtype, name string, val string) []byte {
 	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
 	document := p.newJSON(mtype, name, val)
 	p.Metrics[mtype][name] = document
-	p.Mutex.Unlock()
-
-	log.Println("counter----counter")
-	for _, v := range p.Metrics["counter"] {
-		log.Printf("%s", v)
-	}
-	log.Println("counter----counter")
 	return document
 }
 
@@ -104,7 +98,6 @@ func (p *MemStorage) insertJSON(mtype, name string, val string) []byte {
 // Post-condition: creats new Metric instance or returns error
 func (p *MemStorage) newJSON(mtype, name, val string) []byte {
 	if mtype == "counter" {
-		log.Printf("Got counter :%s, %s, %s", mtype, name, val)
 		if doc, ok := p.Metrics[mtype][name]; ok {
 			var toUpdate metrics.Metrics
 			err := json.Unmarshal(doc, &toUpdate)
