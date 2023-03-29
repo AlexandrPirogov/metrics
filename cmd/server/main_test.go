@@ -71,6 +71,7 @@ func TestUpdateHandlerCorrectPath(t *testing.T) {
 	for _, url := range correctPaths {
 		t.Run(url, func(t *testing.T) {
 			//Running server and executing request
+			log.Printf("url: %s", url)
 			res := runPost(url)
 			//Defering to close body
 			defer res.Body.Close()
