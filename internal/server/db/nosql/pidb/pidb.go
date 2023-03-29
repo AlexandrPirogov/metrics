@@ -68,14 +68,17 @@ func (p *MemStorage) ReadValueByParams(mtype, mname string) ([]byte, error) {
 //
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
-func (p *MemStorage) InsertMetric(mtype, name, val string) error {
+func (p *MemStorage) InsertMetric(mtype, name, val string) ([]byte, error) {
 	if metrics.IsMetricCorrect(mtype, name) != nil {
 		errMsg := fmt.Sprintf("given not existing metric %s %s\n", mtype, name)
 		log.Println(errMsg)
-		return errors.New(errMsg)
+		return []byte{}, errors.New(errMsg)
 	}
-	p.insertJSON(mtype, name, val)
-	return nil
+	bytes, err := p.insertJSON(mtype, name, val)
+	if err != nil {
+		return []byte{}, err
+	}
+	return bytes, err
 }
 
 // Creates Metric by given args and insert it to storage
@@ -84,56 +87,73 @@ func (p *MemStorage) InsertMetric(mtype, name, val string) error {
 //
 // Post-condition: insert opertaion executed.
 // Returns 0 if successed. Otherwise means fail
-func (p *MemStorage) insertJSON(mtype, name string, val string) []byte {
+func (p *MemStorage) insertJSON(mtype, name string, val string) ([]byte, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
-	document := p.newJSON(mtype, name, val)
+	document, err := p.newJSON(mtype, name, val)
+	if err != nil {
+		return []byte{}, err
+	}
 	p.Metrics[mtype][name] = document
-	return document
+	return document, nil
 }
 
 // Pre-cond: given mtype, name and val of metric.
 // mtype and name should be one of from package metrics.
 //
 // Post-condition: creats new Metric instance or returns error
-func (p *MemStorage) newJSON(mtype, name, val string) []byte {
+func (p *MemStorage) newJSON(mtype, name, val string) ([]byte, error) {
 	if mtype == "counter" {
-		if doc, ok := p.Metrics[mtype][name]; ok {
-			var toUpdate metrics.Metrics
-			err := json.Unmarshal(doc, &toUpdate)
-			if err != nil {
+		return p.counterJSON(mtype, name, val)
+	}
+	return p.gagueJSON(mtype, name, val)
+}
 
-			}
-			delta := *toUpdate.Delta
-			toAdd, _ := strconv.ParseInt(val, 10, 64)
-			delta += toAdd
-			toUpdate.Delta = &delta
-			toUpdate.ID = name
-			toUpdate.MType = mtype
-			bytes, err := json.Marshal(toUpdate)
-			p.Metrics[mtype][name] = bytes
-			return bytes
-		} else {
-			var toUpdate metrics.Metrics
-			json.Unmarshal(doc, &toUpdate)
-			toAdd, _ := strconv.ParseInt(val, 10, 64)
-			toUpdate.Delta = &toAdd
-			toUpdate.ID = name
-			toUpdate.MType = mtype
-			bytes, _ := json.Marshal(toUpdate)
-			p.Metrics[mtype][name] = bytes
-			return bytes
+// counterJSON converts gauge to JSON
+func (p *MemStorage) counterJSON(mtype, name, val string) ([]byte, error) {
+	var toUpdate metrics.Metrics
+	if doc, ok := p.Metrics[mtype][name]; ok {
+
+		err := json.Unmarshal(doc, &toUpdate)
+		if err != nil {
+			return []byte{}, err
 		}
+		toAdd, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return []byte{}, err
+		}
+		delta := *toUpdate.Delta + toAdd
+		toUpdate.Delta = &delta
+
+	} else {
+		toUpdate = metrics.Metrics{}
+		toAdd, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return []byte{}, err
+		}
+		toUpdate.Delta = &toAdd
 	}
 
+	toUpdate.ID = name
+	toUpdate.MType = mtype
+
+	return json.Marshal(toUpdate)
+
+}
+
+// gagueJSON converts gauge to JSON
+func (p *MemStorage) gagueJSON(mtype, name, val string) ([]byte, error) {
 	toInsert := metrics.Metrics{
 		ID:    name,
 		MType: mtype,
 		Delta: nil,
 	}
 
-	Val, _ := strconv.ParseFloat(val, 64)
+	Val, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return []byte{}, err
+	}
+
 	toInsert.Value = &Val
-	bytes, _ := json.Marshal(toInsert)
-	return bytes
+	return json.Marshal(toInsert)
 }

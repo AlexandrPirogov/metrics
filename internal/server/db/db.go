@@ -7,7 +7,7 @@ import (
 )
 
 type Storable interface {
-	Write(mtype, mname, val string) error
+	Write(mtype, mname, val string) ([]byte, error)
 	Read() []byte
 	ReadByParams(mtype, mname string) ([]byte, error)
 	ReadValueByParams(mtype, mname string) ([]byte, error)
@@ -18,10 +18,10 @@ type DB struct {
 }
 
 // Saves metric in MemStorage
-func (d *DB) Write(mtype, mname, val string) error {
+func (d *DB) Write(mtype, mname, val string) ([]byte, error) {
 	_, err := strconv.ParseFloat(val, 64)
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
 	return d.Storage.InsertMetric(mtype, mname, val)
 }
