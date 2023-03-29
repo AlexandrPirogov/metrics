@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"memtracker/internal/memtrack/metrics"
@@ -67,34 +66,10 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil || metric.ID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
-
-		if metric.MType == "gauge" {
-			if metric.Value == nil || metric.Delta != nil {
-				w.WriteHeader(http.StatusBadRequest)
-			} else {
-				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
-				js, err := d.DB.ReadByParams(metric.MType, metric.ID)
-				if err != nil {
-					log.Printf("err while read after write %v metric: %s %s", err, metric.MType, metric.ID)
-				}
-				w.WriteHeader(http.StatusOK)
-				w.Write(js)
-			}
-		} else if metric.MType == "counter" {
-			if metric.Delta == nil || metric.Value != nil {
-				w.WriteHeader(http.StatusBadRequest)
-			} else {
-				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
-				js, err := d.DB.ReadByParams(metric.MType, metric.ID)
-				if err != nil {
-					log.Printf("err while read after write %v metric: %s %s", err, metric.MType, metric.ID)
-				}
-				w.WriteHeader(http.StatusOK)
-				w.Write(js)
-			}
-
-		} else {
-			w.WriteHeader(http.StatusNotImplemented)
+		body, status := d.processUpdate(metric)
+		w.WriteHeader(status)
+		if len(body) > 0 {
+			w.Write(body)
 		}
 	}
 
