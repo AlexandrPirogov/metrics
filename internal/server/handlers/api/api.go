@@ -79,6 +79,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 //
 // Post-cond: correct metrics saved on server
 func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	val := chi.URLParam(r, "val")
