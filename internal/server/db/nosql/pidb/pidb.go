@@ -49,7 +49,11 @@ func (p *MemStorage) ReadAllMetrics() []byte {
 func (p *MemStorage) ReadValueByParams(mtype, mname string) ([]byte, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
+	var err error
 	js, err := p.Select(mtype, mname)
+	if err != nil {
+		return []byte{}, err
+	}
 	var m metrics.Metrics
 	err = json.Unmarshal(js, &m)
 	if err != nil {
