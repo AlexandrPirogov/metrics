@@ -12,17 +12,19 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func createTestServer() *httptest.Server {
-	handler := &DefaultHandler{DB: &db.DB{Storage: db.MemStoageDB()}}
+	h := &DefaultHandler{DB: &db.DB{Storage: db.MemStoageDB()}}
 	r := chi.NewRouter()
-	r.Use(middleware.SetHeader("Content-Type", "application/json"))
-	r.Post("/update/", handler.UpdateHandler)
-	r.Post("/value/", handler.RetrieveMetric)
+	r.Post("/update/{mtype}/{mname}/{val}", h.UpdateHandler)
+	r.Get("/value/{mtype}/{mname}", h.RetrieveMetric)
+	r.Get("/", h.RetrieveMetrics)
+
+	r.Post("/update/", h.UpdateHandlerJSON)
+	r.Post("/value/", h.RetrieveMetricJSON)
 	return httptest.NewServer(r)
 
 }

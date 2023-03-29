@@ -24,8 +24,6 @@ type MemStorage struct {
 // Post-condition: returns metric in string representation.
 // Returns 0 if successed. Otherwise means fail
 func (p *MemStorage) Select(mtype, mname string) ([]byte, error) {
-	p.Mutex.Lock()
-	defer p.Mutex.Unlock()
 	res, err := []byte{}, fmt.Errorf("not found")
 	if elem, ok := p.Metrics[mtype][mname]; ok {
 		return elem, nil
@@ -62,7 +60,7 @@ func (p *MemStorage) ReadValueByParams(mtype, mname string) ([]byte, error) {
 	if mtype == "counter" {
 		return []byte(fmt.Sprintf("%d", *m.Delta)), nil
 	}
-	return []byte(fmt.Sprintf("%f", *m.Value)), nil
+	return []byte(strconv.FormatFloat(*m.Value, 'f', -1, 64)), nil
 }
 
 // InsertMetric creates and insert metrics in MemStorage
