@@ -18,7 +18,7 @@ func main() {
 	go func() {
 		var client = http.Client{Timeout: time.Second / 2}
 		memtracker := memtrack.NewHTTPMemTracker(client, host+port)
-		memtracker.ReadAndSend(time.Second*2, time.Second*10)
+		memtracker.ReadAndSend()
 	}()
 
 	cancelChan := make(chan os.Signal, 1)

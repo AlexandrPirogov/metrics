@@ -7,10 +7,13 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"memtracker/internal/config"
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/memtrack/trackers"
 	"net/http"
 	"time"
+
+	"github.com/caarlos0/env/v7"
 )
 
 // Collects all types of metrics
@@ -21,7 +24,9 @@ type memtracker struct {
 
 // Read metrics and send it to given with given http.Client
 type httpMemTracker struct {
-	Host string
+	Host           string
+	PollInterval   int
+	ReportInterval int
 	memtracker
 	client http.Client
 }
@@ -33,9 +38,9 @@ type httpMemTracker struct {
 // sendInterval -- how often send metrics to server
 //
 // WARNING: Race condition appears
-func (h httpMemTracker) ReadAndSend(readInterval time.Duration, sendInterval time.Duration) {
-	readTicker := time.NewTicker(readInterval)
-	sendTicker := time.NewTicker(sendInterval)
+func (h httpMemTracker) ReadAndSend() {
+	readTicker := time.NewTicker(time.Second * time.Duration(h.PollInterval))
+	sendTicker := time.NewTicker(time.Second * time.Duration(h.ReportInterval))
 	for {
 		//TODO: fix race condition. Read about mutexes in Go
 		select {
@@ -127,8 +132,14 @@ func (h httpMemTracker) update() {
 //
 // Post-cond: returns new instance of httpMemTracker
 func NewHTTPMemTracker(client http.Client, host string) httpMemTracker {
+	cfg := config.ClientConfig{}
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatalf("error while read config %v", err)
+	}
 	return httpMemTracker{
-		Host:       host,
-		memtracker: memtracker{trackers.New()},
-		client:     client}
+		Host:           cfg.Address,
+		PollInterval:   int(cfg.PollInterval),
+		ReportInterval: int(cfg.ReportInterval),
+		memtracker:     memtracker{trackers.New()},
+		client:         client}
 }
