@@ -138,17 +138,17 @@ func TestCorrectCounterMetric(t *testing.T) {
 
 		})
 	}
-	p := Payload{
-		StatusCode: http.StatusCreated,
-		Metric: metrics.Metrics{
-			ID:    "PollCount",
-			MType: "counter",
-			Delta: nil,
-			Value: nil,
-		},
+	p := metrics.Metrics{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: nil,
+		Value: nil,
 	}
 
-	bytes, _ := json.Marshal(p.Metric)
+	bytes, err := json.Marshal(p)
+	if err != nil {
+		t.Errorf("error while marshal %v", err)
+	}
 	resp := executeGetValueRequest(server, bytes)
 
 	defer resp.Body.Close()
@@ -194,10 +194,11 @@ func TestCorrectGaugeUpdateHandler(t *testing.T) {
 			require.Nil(t, err)
 			var respJs metrics.Metrics
 			buffer, err := io.ReadAll(resp.Body)
+			assert.Nil(t, err)
 
 			err = json.Unmarshal(buffer, &respJs)
-
 			assert.Nil(t, err)
+
 			assert.EqualValues(t, actual.StatusCode, resp.StatusCode)
 			assert.Greater(t, resp.ContentLength, int64(0))
 			assert.EqualValues(t, *actual.Metric.Value, *respJs.Value)

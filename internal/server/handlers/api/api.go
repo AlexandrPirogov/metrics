@@ -41,14 +41,18 @@ type DefaultHandler struct {
 func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 	var metric metrics.Metrics
 	body, err := io.ReadAll(r.Body)
-	err = json.Unmarshal(body, &metric)
-	if err != nil || metric.ID == "" {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
-		body, status := d.processRetrieve(metric)
-		w.WriteHeader(status)
-		if len(body) > 0 {
-			w.Write(body)
+		err := json.Unmarshal(body, &metric)
+		if err != nil || metric.ID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			body, status := d.processRetrieve(metric)
+			w.WriteHeader(status)
+			if len(body) > 0 {
+				w.Write(body)
+			}
 		}
 	}
 
