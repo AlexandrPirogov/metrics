@@ -29,7 +29,7 @@ type MetricsStorer interface {
 	// Pre-cond: given correct type name and value of metric
 	//
 	// Post-cond: stores metric in storage. If success error equals nil
-	Write(mtype string, mname string, val string) error
+	Write(mtype string, mname string, val string) ([]byte, error)
 }
 
 type MetricsHandler interface {
@@ -90,7 +90,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		code := isUpdatePathCorrect(mtype, mname, val)
 		if code == http.StatusOK {
-			if err := d.DB.Write(mtype, mname, val); err != nil {
+			if _, err := d.DB.Write(mtype, mname, val); err != nil {
 				log.Println(err)
 			}
 			w.WriteHeader(http.StatusOK)

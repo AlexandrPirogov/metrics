@@ -99,7 +99,7 @@ func TestRetrieveGaugeMetric(t *testing.T) {
 }
 
 func TestCorrectCounterMetric(t *testing.T) {
-	deltas := []int64{1, 1, 1, 1, 1, 1, 1, 1}
+	deltas := []int64{1, 2, 3, 4, 5, 6, 7, 8}
 	var expectedCounter int64 = 0
 	data := []Payload{}
 	for i := range deltas {

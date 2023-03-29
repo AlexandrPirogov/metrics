@@ -7,7 +7,6 @@ import (
 	"log"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -26,7 +25,7 @@ type MetricsStorer interface {
 	// Pre-cond: given correct type name and value of metric
 	//
 	// Post-cond: stores metric in storage. If success error equals nil
-	Write(mtype string, mname string, val string) error
+	Write(mtype string, mname string, val string) ([]byte, error)
 }
 
 type MetricsHandler interface {
@@ -43,57 +42,15 @@ type DefaultHandler struct {
 func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) {
 	var metric metrics.Metrics
 	body, err := io.ReadAll(r.Body)
-
-	log.Printf("got retrieve %s", body)
 	err = json.Unmarshal(body, &metric)
-	if err != nil || strings.Trim(metric.ID, " ") == "" {
-		log.Printf("err while retrieve marshal %v", err)
+	if err != nil || metric.ID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
-		if metric.MType == "gauge" {
-			if metric.Delta != nil || metric.Value != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write(body)
-			} else {
-				res, err := d.DB.ReadByParams(metric.MType, metric.ID)
-				if err != nil {
-					//	log.Printf("not found request retrieve %s", body)
-					w.WriteHeader(http.StatusOK)
-					tmp := 0.0
-					metric.Value = &tmp
-					res, _ = json.Marshal(metric)
-					w.Write(res)
-				} else {
-					//	log.Printf("retrieve response guage :%s", res)
-					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(res))
-				}
-			}
-
-		} else if metric.MType == "counter" {
-			if metric.Value != nil || metric.Delta != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write(body)
-			} else {
-				res, err := d.DB.ReadByParams(metric.MType, metric.ID)
-				if err != nil {
-					w.WriteHeader(http.StatusNotFound)
-					tmp := int64(0)
-					metric.Delta = &tmp
-					res, _ = json.Marshal(metric)
-					log.Printf("response counter not found:%s", res)
-					w.Write(res)
-				} else {
-					log.Printf("response counter fount:%s", res)
-					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(res))
-				}
-			}
-
-		} else {
-			w.WriteHeader(http.StatusNotImplemented)
+		body, status := d.processRetrieve(metric)
+		w.WriteHeader(status)
+		if len(body) > 0 {
+			w.Write(body)
 		}
-
 	}
 
 }
@@ -115,7 +72,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 			if metric.Value == nil || metric.Delta != nil {
 				w.WriteHeader(http.StatusBadRequest)
 			} else {
-				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.10f", *metric.Value))
+				d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
 				js, err := d.DB.ReadByParams(metric.MType, metric.ID)
 				if err != nil {
 					log.Printf("err while read after write %v metric: %s %s", err, metric.MType, metric.ID)
