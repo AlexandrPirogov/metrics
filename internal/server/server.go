@@ -2,15 +2,22 @@ package server
 
 import (
 	"context"
+	"log"
+	"memtracker/internal/config"
 	"memtracker/internal/server/handlers/api"
 	"net"
 	"net/http"
 
+	"github.com/caarlos0/env/v7"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 func NewMetricServer(addr string, h api.MetricsHandler, ctx context.Context) *http.Server {
+	cfg := config.ServerConfig{}
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatalf("error while parsing env %v", err)
+	}
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Group(func(r chi.Router) {
@@ -27,7 +34,7 @@ func NewMetricServer(addr string, h api.MetricsHandler, ctx context.Context) *ht
 	})
 
 	return &http.Server{
-		Addr:        ":8080",
+		Addr:        cfg.Address,
 		Handler:     r,
 		BaseContext: func(listener net.Listener) context.Context { return ctx },
 	}
