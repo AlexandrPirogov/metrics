@@ -1,7 +1,6 @@
 package pidb
 
 import (
-	"log"
 	"memtracker/internal/memtrack/metrics"
 	"testing"
 
@@ -31,12 +30,8 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 	var gauges = metrics.MemStats{}
 	metrics := gauges.AsMap()
 	for name := range metrics {
-		//	beforeInsert := len(db.Metrics)
-		log.Printf("hehe--%s--%s--", name, gauges.String())
-		insertStatus, _ := db.InsertMetric(gauges.String(), name, "0")
-		//	afterInsert := len(db.Metrics)
-		assert.Equal(t, nil, insertStatus, "Can't insert correct gauge metric!\n")
-		//assert.Greater(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
+		_, err := db.InsertMetric(gauges.String(), name, "0")
+		assert.Equal(t, nil, err, "Can't insert correct gauge metric!\n")
 	}
 }
 
@@ -69,11 +64,8 @@ func TestWriteCounterMetrics(t *testing.T) {
 	var counters = metrics.Polls{}
 	metrics := counters.AsMap()
 	for name := range metrics {
-		//beforeInsert := len(db.Metrics)
-		insertStatus, _ := db.InsertMetric(counters.String(), name, "0")
-		//afterInsert := len(db.Metrics)
-		assert.Equal(t, nil, insertStatus, "Can't insert correcet gauge metric!\n")
-		//assert.Greater(t, afterInsert, beforeInsert, "After failed insert db size should be not be modified!")
+		_, err := db.InsertMetric(counters.String(), name, "0")
+		assert.Equal(t, nil, err, "Can't insert correcet gauge metric!\n")
 	}
 }
 

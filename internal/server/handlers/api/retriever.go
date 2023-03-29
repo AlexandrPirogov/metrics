@@ -17,7 +17,7 @@ func (d *DefaultHandler) processRetrieve(metric metrics.Metrics) ([]byte, int) {
 }
 
 func (d *DefaultHandler) processRetrieveCounter(metric metrics.Metrics) ([]byte, int) {
-	if metric.Value != nil || metric.Delta != nil {
+	if metric.Delta != nil {
 		return []byte{}, http.StatusBadRequest
 	} else {
 		res, err := d.DB.ReadByParams(metric.MType, metric.ID)
@@ -30,7 +30,7 @@ func (d *DefaultHandler) processRetrieveCounter(metric metrics.Metrics) ([]byte,
 }
 
 func (d *DefaultHandler) processRetrieveGauge(metric metrics.Metrics) ([]byte, int) {
-	if metric.Delta != nil || metric.Value != nil {
+	if metric.Delta != nil {
 		return []byte{}, http.StatusBadRequest
 	} else {
 		res, err := d.DB.ReadByParams(metric.MType, metric.ID)
