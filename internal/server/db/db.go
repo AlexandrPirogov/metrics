@@ -49,6 +49,16 @@ func (d *DB) Write(mtype, mname, val string) ([]byte, error) {
 	return bytes, err
 }
 
+func (d *DB) WriteRestored(mtype, mname, val string) ([]byte, error) {
+	_, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return []byte{}, err
+	}
+	bytes, err := d.Storage.RestoreMetric(mtype, mname, val)
+	go func() { d.Journaler.Write(bytes) }()
+	return bytes, err
+}
+
 func (d *DB) ReadValueByParams(mtype, mname string) ([]byte, error) {
 	return d.Storage.ReadValueByParams(mtype, mname)
 }
@@ -82,11 +92,15 @@ func (d *DB) restore(bytes [][]byte) {
 			continue
 		}
 		if metric.MType == "counter" {
-			d.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
+			d.WriteRestored(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
 		} else {
-			d.Write(metric.MType, metric.ID, fmt.Sprintf("%f", *metric.Value))
+			d.WriteRestored(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
 		}
 	}
+}
+
+func (d *DB) restoreGauge(mtype string, name string, val string) {
+	d.Write(mtype, name, name)
 }
 
 // initDB initialize map for MemStorage

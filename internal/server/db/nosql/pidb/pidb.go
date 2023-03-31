@@ -83,6 +83,19 @@ func (p *MemStorage) InsertMetric(mtype, name, val string) ([]byte, error) {
 	return bytes, err
 }
 
+func (p *MemStorage) RestoreMetric(mtype, name, val string) ([]byte, error) {
+	if metrics.IsMetricCorrect(mtype, name) != nil {
+		errMsg := fmt.Sprintf("given not existing metric %s %s\n", mtype, name)
+		log.Println(errMsg)
+		return []byte{}, errors.New(errMsg)
+	}
+	bytes, err := p.restoreJSON(mtype, name, val)
+	if err != nil {
+		return []byte{}, err
+	}
+	return bytes, err
+}
+
 // Creates Metric by given args and insert it to storage
 //
 // Pre-cond: given correct args for Metrics
@@ -92,7 +105,18 @@ func (p *MemStorage) InsertMetric(mtype, name, val string) ([]byte, error) {
 func (p *MemStorage) insertJSON(mtype, name string, val string) ([]byte, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
-	document, err := p.newJSON(mtype, name, val)
+	document, err := p.newJSON(mtype, name, val, false)
+	if err != nil {
+		return []byte{}, err
+	}
+	p.Metrics[mtype][name] = document
+	return document, nil
+}
+
+func (p *MemStorage) restoreJSON(mtype, name string, val string) ([]byte, error) {
+	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
+	document, err := p.newJSON(mtype, name, val, true)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -104,15 +128,15 @@ func (p *MemStorage) insertJSON(mtype, name string, val string) ([]byte, error) 
 // mtype and name should be one of from package metrics.
 //
 // Post-condition: creats new Metric instance or returns error
-func (p *MemStorage) newJSON(mtype, name, val string) ([]byte, error) {
+func (p *MemStorage) newJSON(mtype, name, val string, shouldRestore bool) ([]byte, error) {
 	if mtype == "counter" {
-		return p.counterJSON(mtype, name, val)
+		return p.counterJSON(mtype, name, val, shouldRestore)
 	}
 	return p.gagueJSON(mtype, name, val)
 }
 
 // counterJSON converts gauge to JSON
-func (p *MemStorage) counterJSON(mtype, name, val string) ([]byte, error) {
+func (p *MemStorage) counterJSON(mtype, name, val string, shouldRestore bool) ([]byte, error) {
 	var toUpdate metrics.Metrics
 	if doc, ok := p.Metrics[mtype][name]; ok {
 
@@ -124,8 +148,12 @@ func (p *MemStorage) counterJSON(mtype, name, val string) ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		delta := *toUpdate.Delta + toAdd
-		toUpdate.Delta = &delta
+		if !shouldRestore {
+			delta := *toUpdate.Delta + toAdd
+			toUpdate.Delta = &delta
+		} else {
+			toUpdate.Delta = &toAdd
+		}
 
 	} else {
 		toUpdate = metrics.Metrics{}
