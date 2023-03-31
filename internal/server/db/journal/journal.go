@@ -53,19 +53,16 @@ func (j Journal) readByTimer(file *os.File) {
 	writer := bufio.NewWriter(file)
 	read := time.NewTicker(time.Second * time.Duration(j.ReadInterval))
 	for {
-		select {
-		case <-read.C:
-			for {
-				if bytes, ok := <-j.Channel; ok {
-					writer.Write(append(bytes, '\n'))
-					writer.Flush()
-				} else {
-					writer.Flush()
-					break
-				}
+		<-read.C
+		for {
+			if bytes, ok := <-j.Channel; ok {
+				writer.Write(append(bytes, '\n'))
+				writer.Flush()
+			} else {
+				writer.Flush()
+				break
 			}
 		}
-
 	}
 }
 
