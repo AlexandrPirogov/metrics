@@ -11,6 +11,7 @@ import (
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/memtrack/trackers"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/caarlos0/env/v7"
@@ -136,10 +137,20 @@ func NewHTTPMemTracker(client http.Client, host string) httpMemTracker {
 	if err := env.Parse(&cfg); err != nil {
 		log.Fatalf("error while read config %v", err)
 	}
+	pollInterval := cfg.PollInterval[:len(cfg.PollInterval)-1]
+	poll, err := strconv.Atoi(string(pollInterval))
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	reportInterval := cfg.ReportInterval[:len(cfg.ReportInterval)-1]
+	report, err := strconv.Atoi(string(reportInterval))
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 	return httpMemTracker{
 		Host:           cfg.Address,
-		PollInterval:   int(cfg.PollInterval),
-		ReportInterval: int(cfg.ReportInterval),
+		PollInterval:   poll,
+		ReportInterval: report,
 		memtracker:     memtracker{trackers.New()},
 		client:         client}
 }

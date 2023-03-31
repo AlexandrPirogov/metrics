@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 // Better use .env
@@ -16,8 +15,9 @@ var port string = ":8080"
 
 func main() {
 	go func() {
-		var client = http.Client{Timeout: time.Second / 2}
+		var client = http.Client{}
 		memtracker := memtrack.NewHTTPMemTracker(client, host+port)
+		log.Printf("Started agent on %s, poll: %d, report: %d", memtracker.Host, memtracker.PollInterval, memtracker.ReportInterval)
 		memtracker.ReadAndSend()
 	}()
 

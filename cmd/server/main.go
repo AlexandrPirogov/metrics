@@ -27,7 +27,7 @@ func main() {
 
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
-
+	log.Printf("started server on %s\n", server.Addr)
 	<-cancelChan
 	log.Printf("os.Interrupt-- shutting down...\n")
 	go func() {
