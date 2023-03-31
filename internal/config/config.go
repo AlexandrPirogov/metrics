@@ -11,3 +11,9 @@ type ClientConfig struct {
 type ServerConfig struct {
 	Address string `env:"ADDRESS" envDefault:"localhost:8080"`
 }
+
+type JournalConfig struct {
+	StoreFile    string `env:"STORE_FILE"`
+	Restore      bool   `env:"RESTORE" envDefault:"true"`
+	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300"`
+}
