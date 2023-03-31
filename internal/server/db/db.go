@@ -1,6 +1,11 @@
 package db
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/server/db/journal"
 	"memtracker/internal/server/db/nosql/pidb"
 	"strconv"
 	"sync"
@@ -14,7 +19,23 @@ type Storable interface {
 }
 
 type DB struct {
-	Storage pidb.MemStorage
+	Storage   pidb.MemStorage
+	Journaler journal.Journal
+}
+
+func (d *DB) Start() {
+	d.Journaler = journal.NewJournal()
+	bytes, err := d.Journaler.Restore()
+	if err == nil {
+		log.Printf("restoring db...\n")
+		d.restore(bytes)
+	} else {
+		log.Printf("%v", err)
+	}
+
+	go func() {
+		d.Journaler.Start()
+	}()
 }
 
 // Saves metric in MemStorage
@@ -23,7 +44,9 @@ func (d *DB) Write(mtype, mname, val string) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	return d.Storage.InsertMetric(mtype, mname, val)
+	bytes, err := d.Storage.InsertMetric(mtype, mname, val)
+	go func() { d.Journaler.Write(bytes) }()
+	return bytes, err
 }
 
 func (d *DB) ReadValueByParams(mtype, mname string) ([]byte, error) {
@@ -42,6 +65,28 @@ func (d *DB) Read() []byte {
 // Post-cond: returns string of metrics with given name and type
 func (d *DB) ReadByParams(mtype, mname string) ([]byte, error) {
 	return d.Storage.Select(mtype, mname)
+}
+
+func (d *DB) StartJournal() error {
+	go func() {
+		d.Journaler.Start()
+	}()
+	return nil
+}
+
+func (d *DB) restore(bytes [][]byte) {
+	for _, item := range bytes {
+		var metric metrics.Metrics
+		if err := json.Unmarshal(item, &metric); err != nil {
+			log.Printf("error while unmasrhal restore %s %v", item, err)
+			continue
+		}
+		if metric.MType == "counter" {
+			d.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
+		} else {
+			d.Write(metric.MType, metric.ID, fmt.Sprintf("%f", *metric.Value))
+		}
+	}
 }
 
 // initDB initialize map for MemStorage
