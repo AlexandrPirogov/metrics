@@ -5,6 +5,7 @@ import (
 	"log"
 	"memtracker/internal/server"
 	"memtracker/internal/server/db"
+	"memtracker/internal/server/db/journal"
 	"memtracker/internal/server/handlers/api"
 	"os"
 	"os/signal"
@@ -15,8 +16,13 @@ import (
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	handler := &api.DefaultHandler{DB: &db.DB{Storage: db.MemStoageDB()}}
+	handler := &api.DefaultHandler{DB: &db.DB{
+		Storage:   db.MemStoageDB(),
+		Journaler: journal.NewJournal(),
+	}}
 	server := server.NewMetricServer(":8080", handler, ctx)
+	handler.DB.Start()
+
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {

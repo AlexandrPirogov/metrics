@@ -30,6 +30,8 @@ type MetricsStorer interface {
 	//
 	// Post-cond: stores metric in storage. If success error equals nil
 	Write(mtype string, mname string, val string) ([]byte, error)
+
+	Start()
 }
 
 type MetricsHandler interface {
