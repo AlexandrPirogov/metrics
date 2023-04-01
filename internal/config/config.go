@@ -13,6 +13,13 @@ var (
 	PollInterval   string // how often agent will updates metrics
 )
 
+// Configs
+var (
+	ClientCfg  ClientConfig  // Config for agent
+	ServerCfg  ServerConfig  // Config for server
+	JournalCfg JournalConfig //Config for replication
+)
+
 type ClientConfig struct {
 	Address        string   `env:"ADDRESS" envDefault:"localhost:8080"`
 	ReportInterval Interval `env:"REPORT_INTERVAL" envDefault:"10s"`
@@ -27,8 +34,4 @@ type JournalConfig struct {
 	StoreFile    string `env:"STORE_FILE"`
 	Restore      bool   `env:"RESTORE" envDefault:"true"`
 	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300"`
-}
-
-func init() {
-
 }
