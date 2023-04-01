@@ -60,7 +60,7 @@ func (p *MemStorage) ReadValueByParams(mtype, mname string) ([]byte, error) {
 	if mtype == "counter" {
 		return []byte(fmt.Sprintf("%d", *m.Delta)), nil
 	}
-	return []byte(strconv.FormatFloat(*m.Value, 'f', -1, 64)), nil
+	return []byte(fmt.Sprintf("%.3f", *m.Value)), nil
 }
 
 // InsertMetric creates and insert metrics in MemStorage
