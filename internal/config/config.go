@@ -65,13 +65,24 @@ func init() {
 }
 
 func initFlags() {
-	rootClientCmd.LocalFlags().StringVarP(&Address, "address", "a", "localhost:8080", "ADDRESS OF AGNET. Default value: localhost:8080")
-	rootClientCmd.LocalFlags().StringVarP(&ReportInterval, "report", "r", "10s", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
+	//rootClientCmd.PersistentFlags().StringVarP(&Address, "address", "a", "localhost:8080", "ADDRESS OF AGNET. Default value: localhost:8080")
+	rootClientCmd.PersistentFlags().StringVarP(&ReportInterval, "report", "r", "10s", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
+	rootClientCmd.PersistentFlags().StringVarP(&PollInterval, "poll", "p", "10s", "How often metrics are updates. Examples: 0s, 10s, 100s")
 
-	rootServerCmd.LocalFlags().StringVarP(&StoreInterval, "interval", "i", "0s", "Interval of replication")
-	rootServerCmd.LocalFlags().StringVarP(&StoreFile, "file", "f", "./logs.json", "File to replicate")
-	rootServerCmd.LocalFlags().BoolVarP(&Restore, "restore", "r", true, "Should restore DB")
-	rootServerCmd.LocalFlags().StringVarP(&Address, "address", "a", "localhost:8080", "ADDRESS OF SERVER. Default value: localhost:8080")
+	rootServerCmd.PersistentFlags().StringVarP(&StoreInterval, "interval", "i", "0s", "Interval of replication")
+	rootServerCmd.PersistentFlags().StringVarP(&StoreFile, "file", "f", "./logs.json", "File to replicate")
+	rootServerCmd.PersistentFlags().BoolVarP(&Restore, "restore", "r", true, "Should restore DB")
+	rootServerCmd.PersistentFlags().StringVarP(&Address, "address", "a", "localhost:8080", "ADDRESS OF SERVER. Default value: localhost:8080")
+
+	ClientCfg.Address = Address
+	ClientCfg.PollInterval = Interval(PollInterval)
+
+	ServerCfg.Address = Address
+
+	JournalCfg.ReadInterval = StoreFile
+	JournalCfg.Restore = Restore
+	JournalCfg.StoreFile = StoreFile
+
 }
 
 func initEnvVars() {
