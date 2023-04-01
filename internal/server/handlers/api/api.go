@@ -50,7 +50,7 @@ type DefaultHandler struct {
 // RetrieveMetric return all contained metrics
 func (d *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(d.DB.Read()))
 
@@ -63,7 +63,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 	if mtype == "" || mname == "" {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
-		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Type", "text/html")
 		res, err := d.DB.ReadValueByParams(mtype, mname)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -81,7 +81,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 //
 // Post-cond: correct metrics saved on server
 func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "text/html")
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	val := chi.URLParam(r, "val")

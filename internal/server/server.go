@@ -4,6 +4,7 @@ import (
 	"context"
 	"memtracker/internal/config"
 	"memtracker/internal/server/handlers/api"
+	"memtracker/internal/server/middlewares"
 	"net"
 	"net/http"
 
@@ -16,6 +17,7 @@ func NewMetricServer(addr string, h api.MetricsHandler, ctx context.Context) *ht
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Group(func(r chi.Router) {
+		r.Use(middlewares.CompressGZIP)
 		r.Use(middleware.AllowContentType("text/plain"))
 		r.Post("/update/{mtype}/{mname}/{val}", h.UpdateHandler)
 		r.Get("/value/{mtype}/{mname}", h.RetrieveMetric)
@@ -23,6 +25,7 @@ func NewMetricServer(addr string, h api.MetricsHandler, ctx context.Context) *ht
 	})
 
 	r.Group(func(r chi.Router) {
+		r.Use(middlewares.CompressGZIP)
 		r.Use(middleware.AllowContentType("application/json"))
 		r.Post("/update/", h.UpdateHandlerJSON)
 		r.Post("/value/", h.RetrieveMetricJSON)
