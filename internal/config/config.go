@@ -1,6 +1,11 @@
 package config
 
-import "github.com/spf13/cobra"
+import (
+	"log"
+
+	"github.com/caarlos0/env/v7"
+	"github.com/spf13/cobra"
+)
 
 type Interval string
 
@@ -67,4 +72,18 @@ func initFlags() {
 	rootServerCmd.LocalFlags().StringVarP(&StoreFile, "file", "f", "./logs.json", "File to replicate")
 	rootServerCmd.LocalFlags().BoolVarP(&Restore, "restore", "r", true, "Should restore DB")
 	rootServerCmd.LocalFlags().StringVarP(&Address, "address", "a", "localhost:8080", "ADDRESS OF SERVER. Default value: localhost:8080")
+}
+
+func initEnvVars() {
+	if err := env.Parse(&ClientCfg); err != nil {
+		log.Printf("error while read client env variables %v", err)
+	}
+
+	if err := env.Parse(&ServerCfg); err != nil {
+		log.Printf("error while read server env variables %v", err)
+	}
+
+	if err := env.Parse(&JournalCfg); err != nil {
+		log.Printf("error while read journal env variables %v", err)
+	}
 }
