@@ -1,6 +1,24 @@
 package config
 
+import "github.com/spf13/cobra"
+
 type Interval string
+
+// commands
+
+var (
+	rootServerCmd = &cobra.Command{
+		Use:   "server",
+		Short: "A server that working with metrics",
+		Long:  `Some long decrs`,
+	}
+
+	rootClientCmd = &cobra.Command{
+		Use:   "agent",
+		Short: "Collects metrics and sends to server",
+		Long:  `Some long decrs`,
+	}
+)
 
 // flags
 var (
@@ -34,4 +52,19 @@ type JournalConfig struct {
 	StoreFile    string `env:"STORE_FILE"`
 	Restore      bool   `env:"RESTORE" envDefault:"true"`
 	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300"`
+}
+
+func init() {
+	initFlags()
+	initEnvVars()
+}
+
+func initFlags() {
+	rootClientCmd.LocalFlags().StringVarP(&Address, "address", "a", "localhost:8080", "ADDRESS OF AGNET. Default value: localhost:8080")
+	rootClientCmd.LocalFlags().StringVarP(&ReportInterval, "report", "r", "10s", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
+
+	rootServerCmd.LocalFlags().StringVarP(&StoreInterval, "interval", "i", "0s", "Interval of replication")
+	rootServerCmd.LocalFlags().StringVarP(&StoreFile, "file", "f", "./logs.json", "File to replicate")
+	rootServerCmd.LocalFlags().BoolVarP(&Restore, "restore", "r", true, "Should restore DB")
+	rootServerCmd.LocalFlags().StringVarP(&Address, "address", "a", "localhost:8080", "ADDRESS OF SERVER. Default value: localhost:8080")
 }
