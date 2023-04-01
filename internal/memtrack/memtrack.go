@@ -13,8 +13,6 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/caarlos0/env/v7"
 )
 
 // Collects all types of metrics
@@ -133,10 +131,7 @@ func (h httpMemTracker) update() {
 //
 // Post-cond: returns new instance of httpMemTracker
 func NewHTTPMemTracker(client http.Client, host string) httpMemTracker {
-	cfg := config.ClientConfig{}
-	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("error while read config %v", err)
-	}
+	cfg := config.ClientCfg
 	pollInterval := cfg.PollInterval[:len(cfg.PollInterval)-1]
 	poll, err := strconv.Atoi(string(pollInterval))
 	if err != nil {

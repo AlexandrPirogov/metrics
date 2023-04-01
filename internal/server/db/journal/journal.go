@@ -8,15 +8,10 @@ import (
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/caarlos0/env/v7"
 )
 
 func NewJournal() Journal {
-	cfg := config.JournalConfig{}
-	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("error while parsing env %v", err)
-	}
+	cfg := config.JournalCfg
 	readInterval := cfg.ReadInterval[:len(cfg.ReadInterval)-1]
 	read, err := strconv.Atoi(string(readInterval))
 	if err != nil {
