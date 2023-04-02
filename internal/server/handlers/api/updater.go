@@ -32,11 +32,12 @@ func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, i
 }
 
 func (d *DefaultHandler) processUpdateGauge(metric metrics.Metrics) ([]byte, int) {
+	log.Printf("Writing to db%v", metric)
 	if metric.Value == nil || metric.Delta != nil {
 		return []byte{}, http.StatusBadRequest
 	} else {
-		d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
-		body, err := d.DB.ReadByParams(metric.MType, metric.ID)
+		body, err := d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
+		log.Printf("Write result to db %s, %s", body, err)
 		if err != nil {
 			log.Printf("err while read after write %v metric: %s %s", err, metric.MType, metric.ID)
 		}

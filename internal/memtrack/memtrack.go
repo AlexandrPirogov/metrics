@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"memtracker/internal/config"
+	"memtracker/internal/config/agent"
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/memtrack/trackers"
 	"net/http"
@@ -131,7 +131,7 @@ func (h httpMemTracker) update() {
 //
 // Post-cond: returns new instance of httpMemTracker
 func NewHTTPMemTracker(client http.Client, host string) httpMemTracker {
-	cfg := config.ClientCfg
+	cfg := agent.ClientCfg
 	pollInterval := cfg.PollInterval[:len(cfg.PollInterval)-1]
 	poll, err := strconv.Atoi(string(pollInterval))
 	if err != nil {

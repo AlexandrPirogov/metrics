@@ -4,14 +4,14 @@ import (
 	"bufio"
 	"errors"
 	"log"
-	"memtracker/internal/config"
+	"memtracker/internal/config/server"
 	"os"
 	"strconv"
 	"time"
 )
 
 func NewJournal() Journal {
-	cfg := config.JournalCfg
+	cfg := server.JournalCfg
 	readInterval := cfg.ReadInterval[:len(cfg.ReadInterval)-1]
 	read, err := strconv.Atoi(string(readInterval))
 	if err != nil {
@@ -38,9 +38,15 @@ func (j Journal) Start() {
 		return
 	}
 	if j.ReadInterval == 0 {
-		j.synchRead(file)
+		go func() {
+
+			j.synchRead(file)
+		}()
 	} else {
-		j.readByTimer(file)
+		go func() {
+
+			j.readByTimer(file)
+		}()
 	}
 }
 

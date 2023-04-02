@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"memtracker/internal/config"
+	"memtracker/internal/config/server"
 	"memtracker/internal/server/handlers/api"
 	"memtracker/internal/server/middlewares"
 	"net"
@@ -13,7 +13,7 @@ import (
 )
 
 func NewMetricServer(addr string, h api.MetricsHandler, ctx context.Context) *http.Server {
-	cfg := config.ServerCfg
+	cfg := server.ServerCfg
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Group(func(r chi.Router) {
