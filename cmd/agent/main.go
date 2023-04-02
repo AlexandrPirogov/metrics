@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"memtracker/internal/config/agent"
 	"memtracker/internal/memtrack"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ var host string = "localhost"
 var port string = ":8080"
 
 func main() {
+	agent.Exec()
 	go func() {
 		var client = http.Client{}
 		memtracker := memtrack.NewHTTPMemTracker(client, host+port)

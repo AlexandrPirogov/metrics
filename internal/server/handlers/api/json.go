@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
 )
@@ -19,7 +20,9 @@ func (d *DefaultHandler) RetrieveMetricJSON(w http.ResponseWriter, r *http.Reque
 		if err != nil || metric.ID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {
+			log.Printf("get request: %s", body)
 			body, status := d.processRetrieve(metric)
+			log.Printf("get request: %d %s", status, body)
 			w.WriteHeader(status)
 			if len(body) > 0 {
 				w.Write(body)
@@ -42,7 +45,9 @@ func (d *DefaultHandler) UpdateHandlerJSON(w http.ResponseWriter, r *http.Reques
 	if err != nil || metric.ID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
+		log.Printf("update request: %s", body)
 		body, status := d.processUpdate(metric)
+		log.Printf("get response: %d %s", status, body)
 		w.WriteHeader(status)
 		if len(body) > 0 {
 			w.Write(body)

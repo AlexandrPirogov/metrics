@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	config "memtracker/internal/config/server"
 	"memtracker/internal/server"
 	"memtracker/internal/server/db"
 	"memtracker/internal/server/db/journal"
@@ -14,6 +15,7 @@ import (
 )
 
 func main() {
+	config.Exec()
 	ctx, cancel := context.WithCancel(context.Background())
 
 	handler := &api.DefaultHandler{DB: &db.DB{

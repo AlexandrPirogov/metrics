@@ -78,9 +78,9 @@ func (d *DB) ReadByParams(mtype, mname string) ([]byte, error) {
 }
 
 func (d *DB) StartJournal() error {
-	go func() {
-		d.Journaler.Start()
-	}()
+
+	d.Journaler.Start()
+
 	return nil
 }
 
@@ -88,7 +88,7 @@ func (d *DB) restore(bytes [][]byte) {
 	for _, item := range bytes {
 		var metric metrics.Metrics
 		if err := json.Unmarshal(item, &metric); err != nil {
-			log.Printf("error while unmasrhal restore %s %v", item, err)
+			//log.Printf("error while unmasrhal restore %s %v", item, err)
 			continue
 		}
 		if metric.MType == "counter" {
