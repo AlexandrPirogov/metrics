@@ -48,11 +48,15 @@ func Exec() {
 	rootClientCmd.PersistentFlags().StringVarP(&ReportInterval, "report", "r", "10s", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
 	rootClientCmd.PersistentFlags().StringVarP(&PollInterval, "poll", "p", "2s", "How often metrics are updates. Examples: 0s, 10s, 100s")
 
+	rootClientCmd.Execute()
+
 	if err := rootClientCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	ClientCfg.Address = Address
+	if ClientCfg.Address == "" {
+		ClientCfg.Address = Address
+	}
 
 	log.Printf("Flags config:\nclient:%v", ClientCfg)
 }

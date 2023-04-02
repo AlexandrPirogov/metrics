@@ -66,9 +66,11 @@ func Exec() {
 	}
 
 	rootServerCmd.Execute()
-	ServerCfg.Address = Address
 
-	if JournalCfg.ReadInterval == "300s" {
+	if ServerCfg.Address == "" {
+		ServerCfg.Address = StoreInterval
+	}
+	if JournalCfg.ReadInterval == "" {
 		JournalCfg.ReadInterval = StoreInterval
 	}
 
