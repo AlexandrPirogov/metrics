@@ -52,8 +52,10 @@ func (h httpMemTracker) send() {
 	for _, metric := range h.MetricsContainer.Metrics {
 		mapMetrics := metric.AsMap()
 		if metric.String() == "gauge" {
+			log.Printf("Sending gauges\n")
 			h.client.SendGauges(metric, mapMetrics)
 		} else {
+			log.Printf("counters gauges\n")
 			h.client.SendCounter(metric, mapMetrics)
 		}
 	}
@@ -69,7 +71,7 @@ func (h httpMemTracker) update() {
 // Pre-cond: Given client instance and host = addr:port
 //
 // Post-cond: returns new instance of httpMemTracker
-func NewHTTPMemTracker(host string) httpMemTracker {
+func NewHTTPMemTracker() httpMemTracker {
 	cfg := agent.ClientCfg
 	pollInterval := cfg.PollInterval[:len(cfg.PollInterval)-1]
 	poll, err := strconv.Atoi(string(pollInterval))
@@ -86,6 +88,6 @@ func NewHTTPMemTracker(host string) httpMemTracker {
 		PollInterval:   poll,
 		ReportInterval: report,
 		memtracker:     memtracker{trackers.New()},
-		client:         client.NewClient(host, "application/json"),
+		client:         client.NewClient(cfg.Address, "application/json"),
 	}
 }

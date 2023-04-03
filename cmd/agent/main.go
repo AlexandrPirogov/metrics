@@ -9,14 +9,10 @@ import (
 	"syscall"
 )
 
-// Better use .env
-var host string = "localhost"
-var port string = ":8080"
-
 func main() {
 	agent.Exec()
 	go func() {
-		memtracker := memtrack.NewHTTPMemTracker(host + port)
+		memtracker := memtrack.NewHTTPMemTracker()
 		log.Printf("Started agent on %s, poll: %d, report: %d", memtracker.Host, memtracker.PollInterval, memtracker.ReportInterval)
 		memtracker.ReadAndSend()
 	}()

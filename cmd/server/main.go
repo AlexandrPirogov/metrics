@@ -22,7 +22,7 @@ func main() {
 		Storage:   db.MemStoageDB(),
 		Journaler: journal.NewJournal(),
 	}}
-	server := server.NewMetricServer(":8080", handler, ctx)
+	server := server.NewMetricServer(handler, ctx)
 	handler.DB.Start()
 
 	go func() {

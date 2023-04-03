@@ -24,6 +24,7 @@ type Client struct {
 }
 
 func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]interface{}) {
+	log.Printf("sending to host: %s", c.Host)
 	for k, v := range mapMetrics {
 		val := float64(v.(float64))
 		del := int64(val)
@@ -56,6 +57,7 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 }
 
 func (c Client) SendGauges(metric metrics.Metricable, mapMetrics map[string]interface{}) {
+	log.Printf("sending to host: %s", c.Host)
 	for k, v := range mapMetrics {
 		val := float64(v.(float64))
 		toMarsal := metrics.Metrics{

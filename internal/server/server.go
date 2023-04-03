@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewMetricServer(addr string, h api.MetricsHandler, ctx context.Context) *http.Server {
+func NewMetricServer(h api.MetricsHandler, ctx context.Context) *http.Server {
 	cfg := server.ServerCfg
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
