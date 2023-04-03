@@ -38,19 +38,8 @@ type ClientConfig struct {
 }
 
 func Exec() {
-
 	if err := env.Parse(&ClientCfg); err != nil {
 		log.Fatalf("error while read client env variables %v", err)
-	}
-
-	rootClientCmd.PersistentFlags().StringVarP(&Address, "address", "a", "", "ADDRESS OF AGNET. Default value: localhost:8080")
-	rootClientCmd.PersistentFlags().StringVarP(&ReportInterval, "report", "r", "s", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
-	rootClientCmd.PersistentFlags().StringVarP(&PollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
-
-	rootClientCmd.Execute()
-
-	if err := rootClientCmd.Execute(); err != nil {
-		log.Fatalf("%v", err)
 	}
 
 	if Address != "" {
@@ -59,25 +48,11 @@ func Exec() {
 }
 
 func init() {
-	//initFlags()
-	//initEnvVars()
-
-}
-
-func initFlags() {
-	rootClientCmd.PersistentFlags().StringVarP(&Address, "address", "a", "localhost:8080", "ADDRESS OF AGNET. Default value: localhost:8080")
-	rootClientCmd.PersistentFlags().StringVarP(&ReportInterval, "report", "r", "10s", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
-	rootClientCmd.PersistentFlags().StringVarP(&PollInterval, "poll", "p", "2s", "How often metrics are updates. Examples: 0s, 10s, 100s")
+	rootClientCmd.PersistentFlags().StringVarP(&Address, "address", "a", "", "ADDRESS OF AGNET. Default value: localhost:8080")
+	rootClientCmd.PersistentFlags().StringVarP(&ReportInterval, "report", "r", "s", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
+	rootClientCmd.PersistentFlags().StringVarP(&PollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
 
 	if err := rootClientCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
-	}
-
-	ClientCfg.Address = Address
-}
-
-func initEnvVars() {
-	if err := env.Parse(&ClientCfg); err != nil {
-		log.Fatalf("error while read client env variables %v", err)
 	}
 }

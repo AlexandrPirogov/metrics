@@ -12,8 +12,8 @@ type Interval string
 // default values
 var (
 	DefaultFileStore     = ""
-	DefaultStoreInterval = "300s"
-	DefaultHost          = "localhost:8080"
+	DefaultStoreInterval = ""
+	DefaultHost          = ""
 	DefaultRestore       = true
 )
 
@@ -65,39 +65,25 @@ func Exec() {
 		log.Fatalf("%v", err)
 	}
 
-	rootServerCmd.Execute()
-
-	if Address != "" {
+	if Address != DefaultHost {
 		ServerCfg.Address = Address
 	}
 
-	if StoreInterval != "" {
+	if StoreInterval != DefaultStoreInterval {
 		JournalCfg.ReadInterval = StoreInterval
 	}
-	if StoreFile != "" {
+	if StoreFile != DefaultFileStore {
 		JournalCfg.StoreFile = StoreFile
 	}
 }
 
 func init() {
-	initFlags()
-	//initEnvVars()
-}
+	rootServerCmd.PersistentFlags().StringVarP(&StoreInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
+	rootServerCmd.PersistentFlags().StringVarP(&StoreFile, "file", "f", DefaultFileStore, "File to replicate")
+	rootServerCmd.PersistentFlags().BoolVarP(&Restore, "restore", "r", DefaultRestore, "Should restore DB")
+	rootServerCmd.PersistentFlags().StringVarP(&Address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
 
-func initFlags() {
-	rootServerCmd.PersistentFlags().StringVarP(&StoreInterval, "interval", "i", "", "Interval of replication")
-	rootServerCmd.PersistentFlags().StringVarP(&StoreFile, "file", "f", "", "File to replicate")
-	rootServerCmd.PersistentFlags().BoolVarP(&Restore, "restore", "r", true, "Should restore DB")
-	rootServerCmd.PersistentFlags().StringVarP(&Address, "address", "a", "", "ADDRESS OF SERVER. Default value: localhost:8080")
-
-}
-
-func initEnvVars() {
-	if err := env.Parse(&ServerCfg); err != nil {
-		log.Fatalf("error while read server env variables %v", err)
-	}
-
-	if err := env.Parse(&JournalCfg); err != nil {
-		log.Fatalf("error while read journal env variables %v", err)
+	if err := rootServerCmd.Execute(); err != nil {
+		log.Fatalf("%v", err)
 	}
 }
