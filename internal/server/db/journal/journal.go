@@ -42,10 +42,11 @@ type Journal struct {
 // Post-cond: data written to the file depending on the chosen mode
 // There are two modes: synch mode writes permanently data to file
 // delayed mode: writes data to the file once at the given period
-func (j Journal) Start() {
+// Returns nil if success started otherwise returns error
+func (j Journal) Start() error {
 	file, err := j.openWriteFile()
 	if err != nil {
-		return
+		return err
 	}
 	if j.ReadInterval == 0 {
 		go func() {
@@ -56,6 +57,7 @@ func (j Journal) Start() {
 			j.writeDelayed(file)
 		}()
 	}
+	return nil
 }
 
 // readByTimer writes data once in a given period from channel

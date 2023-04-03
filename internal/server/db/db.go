@@ -23,6 +23,11 @@ type DB struct {
 	Journaler journal.Journal
 }
 
+// Start starts DB with journal
+//
+// Pre-cond:
+//
+// Post-cond: db started and ready to work
 func (d *DB) Start() {
 	d.Journaler = journal.NewJournal()
 	bytes, err := d.Journaler.Restore()
@@ -34,11 +39,19 @@ func (d *DB) Start() {
 	}
 
 	go func() {
-		d.Journaler.Start()
+		if err := d.Journaler.Start(); err != nil {
+			log.Printf("Can' start journal %v", err)
+		}
 	}()
 }
 
-// Saves metric in MemStorage
+// Write writes metric with given type, name and value
+//
+// Pre-cond: given existing type, non-empty name and correct val
+//
+// Post-cond: creates metrics from given params and writes to db
+// If success returns array of bytes of json'ed metric and nil error
+// Otherwise returns empty slice of byte and error
 func (d *DB) Write(mtype, mname, val string) ([]byte, error) {
 	_, err := strconv.ParseFloat(val, 64)
 	if err != nil {
@@ -49,21 +62,38 @@ func (d *DB) Write(mtype, mname, val string) ([]byte, error) {
 	return bytes, err
 }
 
+// WriteRestored writes restored from file given type, name and value
+// Works like backup
+//
+// Pre-cond: given existing type, non-empty name and correct val
+//
+// Post-cond: creates metrics from given params and writes to db
+// If success returns array of bytes of json'ed metric and nil error
+// Otherwise returns empty slice of byte and error
 func (d *DB) WriteRestored(mtype, mname, val string) ([]byte, error) {
 	_, err := strconv.ParseFloat(val, 64)
 	if err != nil {
 		return []byte{}, err
 	}
 	bytes, err := d.Storage.RestoreMetric(mtype, mname, val)
+	// Made it asynch to escape block with unbuffered channel
 	go func() { d.Journaler.Write(bytes) }()
 	return bytes, err
 }
 
+// ReadValueByParams read metric with given params and returns if it exists
+//
+// Pre-cond: given existing type, non-empty name and correct val
+//
+// Post-cond: if metric is stored in DB return slice of bytes and nil error
+// Otherwise returns empty slice of byte and error
 func (d *DB) ReadValueByParams(mtype, mname string) ([]byte, error) {
 	return d.Storage.ReadValueByParams(mtype, mname)
 }
 
-// Returns
+// Read return all metrics stored in DB
+//
+// Post-cond: returns all metrics marshaled into slice of byte
 func (d *DB) Read() []byte {
 	return d.Storage.ReadAllMetrics()
 }
@@ -77,13 +107,12 @@ func (d *DB) ReadByParams(mtype, mname string) ([]byte, error) {
 	return d.Storage.Select(mtype, mname)
 }
 
-func (d *DB) StartJournal() error {
-
-	d.Journaler.Start()
-
-	return nil
-}
-
+// restore writes restored metric to DB
+//
+// Pre-cond: given slice of slice of bytes/ marshaled metrics
+//
+// Post-cond: unmarshal metric and writes it to DB
+// If metric has type counter DB will contain last value of counter
 func (d *DB) restore(bytes [][]byte) {
 	for _, item := range bytes {
 		var metric metrics.Metrics
@@ -96,10 +125,6 @@ func (d *DB) restore(bytes [][]byte) {
 			d.WriteRestored(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
 		}
 	}
-}
-
-func (d *DB) restoreGauge(mtype string, name string, val string) {
-	d.Write(mtype, name, name)
 }
 
 // initDB initialize map for MemStorage
