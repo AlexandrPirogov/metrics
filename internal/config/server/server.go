@@ -10,7 +10,7 @@ import (
 type Interval string
 
 // default values
-var (
+const (
 	DefaultFileStore     = ""
 	DefaultStoreInterval = ""
 	DefaultHost          = ""
@@ -29,10 +29,10 @@ var (
 
 // flags
 var (
-	Address       string // agent & server addr
-	Restore       bool   // Should db be restored
-	StoreInterval string // period of replication
-	StoreFile     string // file where replication is goint to be written
+	address       string // agent & server addr
+	restore       bool   // Should db be restored
+	storeInterval string // period of replication
+	storeFile     string // file where replication is goint to be written
 )
 
 // Configs
@@ -65,23 +65,23 @@ func Exec() {
 		log.Fatalf("%v", err)
 	}
 
-	if Address != DefaultHost {
-		ServerCfg.Address = Address
+	if address != DefaultHost {
+		ServerCfg.Address = address
 	}
 
-	if StoreInterval != DefaultStoreInterval {
-		JournalCfg.ReadInterval = StoreInterval
+	if storeInterval != DefaultStoreInterval {
+		JournalCfg.ReadInterval = storeInterval
 	}
-	if StoreFile != DefaultFileStore {
-		JournalCfg.StoreFile = StoreFile
+	if storeFile != DefaultFileStore {
+		JournalCfg.StoreFile = storeFile
 	}
 }
 
 func init() {
-	rootServerCmd.PersistentFlags().StringVarP(&StoreInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
-	rootServerCmd.PersistentFlags().StringVarP(&StoreFile, "file", "f", DefaultFileStore, "File to replicate")
-	rootServerCmd.PersistentFlags().BoolVarP(&Restore, "restore", "r", DefaultRestore, "Should restore DB")
-	rootServerCmd.PersistentFlags().StringVarP(&Address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
+	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
+	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
+	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
+	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
 
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)

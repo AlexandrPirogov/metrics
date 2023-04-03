@@ -21,9 +21,9 @@ var (
 
 // flags
 var (
-	Address        string // agent & server addr
-	ReportInterval string // how often agent will sends metrics to server
-	PollInterval   string // how often agent will updates metrics
+	address        string // agent & server addr
+	reportInterval string // how often agent will sends metrics to server
+	pollInterval   string // how often agent will updates metrics
 )
 
 // Configs
@@ -42,15 +42,15 @@ func Exec() {
 		log.Fatalf("error while read client env variables %v", err)
 	}
 
-	if Address != "" {
-		ClientCfg.Address = Address
+	if address != "" {
+		ClientCfg.Address = address
 	}
 }
 
 func init() {
-	rootClientCmd.PersistentFlags().StringVarP(&Address, "address", "a", "", "ADDRESS OF AGNET. Default value: localhost:8080")
-	rootClientCmd.PersistentFlags().StringVarP(&ReportInterval, "report", "r", "", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
-	rootClientCmd.PersistentFlags().StringVarP(&PollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
+	rootClientCmd.PersistentFlags().StringVarP(&address, "address", "a", "", "ADDRESS OF AGNET. Default value: localhost:8080")
+	rootClientCmd.PersistentFlags().StringVarP(&reportInterval, "report", "r", "", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
+	rootClientCmd.PersistentFlags().StringVarP(&pollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
 
 	if err := rootClientCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
