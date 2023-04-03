@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
 )
@@ -31,13 +30,10 @@ func (d *DefaultHandler) processRetrieveCounter(metric metrics.Metrics) ([]byte,
 }
 
 func (d *DefaultHandler) processRetrieveGauge(metric metrics.Metrics) ([]byte, int) {
-	log.Printf("Read to db%v", metric)
 	if metric.Delta != nil {
 		return []byte{}, http.StatusBadRequest
 	} else {
 		res, err := d.DB.ReadByParams(metric.MType, metric.ID)
-		log.Printf("Retrieve result %v to db %s, %s", metric, res, err)
-
 		if err != nil {
 			return []byte{}, http.StatusNotFound
 		} else {

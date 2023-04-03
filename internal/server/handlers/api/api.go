@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
 	"strconv"
@@ -85,15 +84,12 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	val := chi.URLParam(r, "val")
-	log.Printf("type: %s  name:%s  val:%s\n", mtype, mname, val)
 	if mtype == "" || mname == "" || val == "" {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		code := isUpdatePathCorrect(mtype, mname, val)
 		if code == http.StatusOK {
-			if _, err := d.DB.Write(mtype, mname, val); err != nil {
-				log.Println(err)
-			}
+			d.DB.Write(mtype, mname, val)
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(""))
 		} else {
@@ -117,12 +113,10 @@ func isUpdatePathCorrect(mtype, mname, mval string) int {
 
 	// If given incorrect path
 	if _, ok := mTypes[mtype]; !ok {
-		log.Printf("Given metric type %s not exists!", mtype)
 		return http.StatusNotImplemented
 	}
 
 	if _, err := strconv.ParseFloat(mval, 64); err != nil {
-		log.Printf("Error: %v", err)
 		return http.StatusBadRequest
 	}
 	return http.StatusOK

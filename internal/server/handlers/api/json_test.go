@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/server/db"
 	"net/http"
@@ -88,7 +87,6 @@ func TestRetrieveGaugeMetric(t *testing.T) {
 				t.Errorf("error while reading resp %v", err)
 			}
 			var actual metrics.Metrics
-			log.Println("Got response starts marshal")
 			err = json.Unmarshal(body, &actual)
 			if err != nil {
 				t.Errorf("error while unmarshal %v", err)

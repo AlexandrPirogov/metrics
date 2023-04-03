@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
 )
@@ -23,23 +22,17 @@ func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, i
 		return []byte{}, http.StatusBadRequest
 	} else {
 		d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
-		body, err := d.DB.ReadByParams(metric.MType, metric.ID)
-		if err != nil {
-			log.Printf("err while read after write %v metric: %s %s", err, metric.MType, metric.ID)
-		}
+		body, _ := d.DB.ReadByParams(metric.MType, metric.ID)
 		return body, http.StatusOK
 	}
 }
 
 func (d *DefaultHandler) processUpdateGauge(metric metrics.Metrics) ([]byte, int) {
-	log.Printf("Writing to db%v", metric)
 	if metric.Value == nil || metric.Delta != nil {
 		return []byte{}, http.StatusBadRequest
 	} else {
 		body, err := d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
-		log.Printf("Write result to db %s, %s", body, err)
 		if err != nil {
-			log.Printf("err while read after write %v metric: %s %s", err, metric.MType, metric.ID)
 		}
 		return body, http.StatusOK
 	}
