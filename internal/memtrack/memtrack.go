@@ -3,14 +3,10 @@
 package memtrack
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
 	"log"
 	"memtracker/internal/config/agent"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/memtrack/http/client"
 	"memtracker/internal/memtrack/trackers"
-	"net/http"
 	"strconv"
 	"time"
 )
@@ -26,8 +22,8 @@ type httpMemTracker struct {
 	Host           string
 	PollInterval   int
 	ReportInterval int
+	client         client.Client
 	memtracker
-	client http.Client
 }
 
 // ReadAndSend Starts to read metrics
@@ -56,68 +52,11 @@ func (h httpMemTracker) send() {
 	for _, metric := range h.MetricsContainer.Metrics {
 		mapMetrics := metric.AsMap()
 		if metric.String() == "gauge" {
-			for k, v := range mapMetrics {
-				val := float64(v.(float64))
-				toMarsal := metrics.Metrics{
-					ID:    k,
-					MType: metric.String(),
-					Value: &val,
-				}
-				url := "http://" + h.Host + "/update/"
-
-				js, err := json.Marshal(toMarsal)
-				if err != nil {
-					log.Printf("%v", err)
-					continue
-				}
-				buffer := bytes.NewBuffer(js)
-				resp, err := h.client.Post(url, "application/json", buffer)
-
-				if err != nil {
-					log.Print(err)
-					continue
-				}
-				defer resp.Body.Close()
-
-				_, err = io.ReadAll(resp.Body)
-				if err != nil {
-					log.Printf("error while readall %v", err)
-				}
-			}
+			h.client.SendGauges(metric, mapMetrics)
 		} else {
-			for k, v := range mapMetrics {
-				val := float64(v.(float64))
-				del := int64(val)
-				toMarsal := metrics.Metrics{
-					ID:    k,
-					MType: metric.String(),
-					Delta: &del,
-				}
-				url := "http://" + h.Host + "/update/"
-
-				js, err := json.Marshal(toMarsal)
-				if err != nil {
-					log.Printf("%v", err)
-					continue
-				}
-				buffer := bytes.NewBuffer(js)
-				resp, err := h.client.Post(url, "application/json", buffer)
-
-				if err != nil {
-					log.Print(err)
-					continue
-				}
-				defer resp.Body.Close()
-
-				_, err = io.ReadAll(resp.Body)
-				if err != nil {
-					log.Printf("error while readall %v", err)
-				}
-			}
+			h.client.SendCounter(metric, mapMetrics)
 		}
-
 	}
-
 }
 
 // updates values of tracking metrics
@@ -130,7 +69,7 @@ func (h httpMemTracker) update() {
 // Pre-cond: Given client instance and host = addr:port
 //
 // Post-cond: returns new instance of httpMemTracker
-func NewHTTPMemTracker(client http.Client, host string) httpMemTracker {
+func NewHTTPMemTracker(host string) httpMemTracker {
 	cfg := agent.ClientCfg
 	pollInterval := cfg.PollInterval[:len(cfg.PollInterval)-1]
 	poll, err := strconv.Atoi(string(pollInterval))
@@ -147,5 +86,6 @@ func NewHTTPMemTracker(client http.Client, host string) httpMemTracker {
 		PollInterval:   poll,
 		ReportInterval: report,
 		memtracker:     memtracker{trackers.New()},
-		client:         client}
+		client:         client.NewClient(host, "application/json"),
+	}
 }
