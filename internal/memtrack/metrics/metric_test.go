@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"encoding/json"
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,7 +42,7 @@ func TestMetricSerialize(t *testing.T) {
 			if err != nil {
 				t.Errorf("got error while marshal %v", err)
 			}
-			log.Println(js)
+
 			unmarshaled := Metrics{}
 			err = json.Unmarshal(js, &unmarshaled)
 			if err != nil {

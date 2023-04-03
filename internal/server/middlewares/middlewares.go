@@ -3,7 +3,6 @@ package middlewares
 import (
 	"compress/gzip"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -31,7 +30,6 @@ func CompressGZIP(next http.Handler) http.Handler {
 		}
 		defer gz.Close()
 		w.Header().Set("Content-Encoding", "gzip")
-		log.Println("encoding workd")
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
 	})
 }

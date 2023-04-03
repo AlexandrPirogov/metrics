@@ -3,7 +3,6 @@ package main_test
 import (
 	"fmt"
 	"io"
-	"log"
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/server/db"
 	"memtracker/internal/server/handlers/api"
@@ -71,7 +70,6 @@ func TestUpdateHandlerCorrectPath(t *testing.T) {
 	for _, url := range correctPaths {
 		t.Run(url, func(t *testing.T) {
 			//Running server and executing request
-			log.Printf("url: %s", url)
 			res := runPost(url)
 			//Defering to close body
 			defer res.Body.Close()
@@ -101,7 +99,7 @@ func runPost(url string) *http.Response {
 	r.Post("/update/{mtype}/{mname}/{val}", handler.UpdateHandler)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
-	log.Printf("Url: %v\n", ts.URL+url)
+
 	resp, err := http.Post(ts.URL+url, "text/html", nil)
 	if err != nil {
 		return nil
@@ -117,7 +115,7 @@ func runGet(url string) *http.Response {
 	r.Get("/value/{mtype}/{mname}", handler.UpdateHandler)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
-	log.Printf("Url: %v\n", ts.URL+url)
+
 	resp, err := http.Get(ts.URL + url)
 	if err != nil {
 		return nil

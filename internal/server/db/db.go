@@ -88,7 +88,6 @@ func (d *DB) restore(bytes [][]byte) {
 	for _, item := range bytes {
 		var metric metrics.Metrics
 		if err := json.Unmarshal(item, &metric); err != nil {
-			//log.Printf("error while unmasrhal restore %s %v", item, err)
 			continue
 		}
 		if metric.MType == "counter" {

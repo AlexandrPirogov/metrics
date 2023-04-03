@@ -54,18 +54,17 @@ type JournalConfig struct {
 func Exec() {
 
 	if err := env.Parse(&ServerCfg); err != nil {
-		log.Printf("error while read server env variables %v", err)
+		log.Fatalf("error while read server env variables %v", err)
 	}
 
 	if err := env.Parse(&JournalCfg); err != nil {
-		log.Printf("error while read journal env variables %v", err)
+		log.Fatalf("error while read journal env variables %v", err)
 	}
 
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	log.Printf("Env config: \nserver:%v \njournal:%v\n", ServerCfg, JournalCfg)
 	rootServerCmd.Execute()
 
 	if Address != "" {
@@ -78,9 +77,6 @@ func Exec() {
 	if StoreFile != "" {
 		JournalCfg.StoreFile = StoreFile
 	}
-
-	log.Printf("Flags config: \nserver:%v \njournal:%v\n", ServerCfg, JournalCfg)
-
 }
 
 func init() {
@@ -98,12 +94,10 @@ func initFlags() {
 
 func initEnvVars() {
 	if err := env.Parse(&ServerCfg); err != nil {
-		log.Printf("error while read server env variables %v", err)
+		log.Fatalf("error while read server env variables %v", err)
 	}
 
 	if err := env.Parse(&JournalCfg); err != nil {
-		log.Printf("error while read journal env variables %v", err)
+		log.Fatalf("error while read journal env variables %v", err)
 	}
-
-	log.Printf("Env config: \nserver:%v \njournal:%v\n", ServerCfg, JournalCfg)
 }

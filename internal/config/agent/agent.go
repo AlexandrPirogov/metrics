@@ -40,9 +40,8 @@ type ClientConfig struct {
 func Exec() {
 
 	if err := env.Parse(&ClientCfg); err != nil {
-		log.Printf("error while read client env variables %v", err)
+		log.Fatalf("error while read client env variables %v", err)
 	}
-	log.Printf("Env config:\nclient:%v", ClientCfg)
 
 	rootClientCmd.PersistentFlags().StringVarP(&Address, "address", "a", "", "ADDRESS OF AGNET. Default value: localhost:8080")
 	rootClientCmd.PersistentFlags().StringVarP(&ReportInterval, "report", "r", "s", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
@@ -57,8 +56,6 @@ func Exec() {
 	if Address != "" {
 		ClientCfg.Address = Address
 	}
-
-	log.Printf("Flags config:\nclient:%v", ClientCfg)
 }
 
 func init() {
@@ -77,13 +74,10 @@ func initFlags() {
 	}
 
 	ClientCfg.Address = Address
-
-	log.Printf("Flags config:\nclient:%v", ClientCfg)
 }
 
 func initEnvVars() {
 	if err := env.Parse(&ClientCfg); err != nil {
-		log.Printf("error while read client env variables %v", err)
+		log.Fatalf("error while read client env variables %v", err)
 	}
-	log.Printf("Env config:\nclient:%v", ClientCfg)
 }
