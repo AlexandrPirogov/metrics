@@ -24,11 +24,9 @@ type MemStorage struct {
 // Post-condition: returns metric in string representation.
 // Returns 0 if successed. Otherwise means fail
 func (p *MemStorage) Select(mtype, mname string) ([]byte, error) {
-	res, err := []byte{}, fmt.Errorf("not found")
-	if elem, ok := p.Metrics[mtype][mname]; ok {
-		return elem, nil
-	}
-	return res, err
+	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
+	return p.search(mtype, mname)
 }
 
 // Metrics returns all metrics in string representions
@@ -48,7 +46,7 @@ func (p *MemStorage) ReadValueByParams(mtype, mname string) ([]byte, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
 	var err error
-	js, err := p.Select(mtype, mname)
+	js, err := p.search(mtype, mname)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -230,4 +228,12 @@ func (p *MemStorage) gagueJSON(mtype, name, val string) ([]byte, error) {
 
 	toInsert.Value = &Val
 	return json.Marshal(toInsert)
+}
+
+func (p *MemStorage) search(mtype, mname string) ([]byte, error) {
+	res, err := []byte{}, fmt.Errorf("not found")
+	if elem, ok := p.Metrics[mtype][mname]; ok {
+		return elem, nil
+	}
+	return res, err
 }
