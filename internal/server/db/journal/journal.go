@@ -66,6 +66,7 @@ func (j Journal) Start() error {
 //
 // Post-cond: data written to the file
 func (j Journal) writeDelayed(file *os.File) {
+	defer file.Close()
 	writer := bufio.NewWriter(file)
 	read := time.NewTicker(time.Second * time.Duration(j.ReadInterval))
 	for {
@@ -87,6 +88,7 @@ func (j Journal) writeDelayed(file *os.File) {
 //
 // Post-cond: data written to the file
 func (j Journal) writeSynch(file *os.File) {
+	defer file.Close()
 	writer := bufio.NewWriter(file)
 	for {
 		if bytes, ok := <-j.Channel; ok {
