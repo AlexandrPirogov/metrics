@@ -114,6 +114,7 @@ func (j Journal) Restore() ([][]byte, error) {
 	if err != nil {
 		return [][]byte{}, err
 	}
+	defer file.Close()
 	bytes := make([][]byte, 0)
 	reader := bufio.NewScanner(file)
 	reader.Split(bufio.ScanLines)
