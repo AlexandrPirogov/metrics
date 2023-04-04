@@ -46,7 +46,7 @@ type ServerConfig struct {
 }
 
 type JournalConfig struct {
-	StoreFile    string `env:"STORE_FILE"`
+	StoreFile    string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore      bool   `env:"RESTORE" envDefault:"true"`
 	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300s"`
 }
