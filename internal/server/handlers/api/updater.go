@@ -34,11 +34,11 @@ func (d *DefaultHandler) processUpdate(metric metrics.Metrics) ([]byte, int) {
 func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, int) {
 	if metric.Delta == nil || metric.Value != nil {
 		return []byte{}, http.StatusBadRequest
-	} else {
-		d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
-		body, _ := d.DB.ReadByParams(metric.MType, metric.ID)
-		return body, http.StatusOK
 	}
+
+	d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
+	body, _ := d.DB.ReadByParams(metric.MType, metric.ID)
+	return body, http.StatusOK
 }
 
 // processUpdateCounter updates update metric
@@ -51,8 +51,8 @@ func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, i
 func (d *DefaultHandler) processUpdateGauge(metric metrics.Metrics) ([]byte, int) {
 	if metric.Value == nil || metric.Delta != nil {
 		return []byte{}, http.StatusBadRequest
-	} else {
-		body, _ := d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
-		return body, http.StatusOK
 	}
+
+	body, _ := d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
+	return body, http.StatusOK
 }

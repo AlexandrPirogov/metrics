@@ -14,19 +14,20 @@ func (d *DefaultHandler) RetrieveMetricJSON(w http.ResponseWriter, r *http.Reque
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		err := json.Unmarshal(body, &metric)
-		if err != nil || metric.ID == "" {
-			w.WriteHeader(http.StatusBadRequest)
-		} else {
-			body, status := d.processRetrieve(metric)
-			w.WriteHeader(status)
-			if len(body) > 0 {
-				w.Write(body)
-			}
-		}
+		return
 	}
 
+	err = json.Unmarshal(body, &metric)
+	if err != nil || metric.ID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, status := d.processRetrieve(metric)
+	w.WriteHeader(status)
+	if len(body) > 0 {
+		w.Write(body)
+	}
 }
 
 // UpdateHandler saves incoming metrics
@@ -41,12 +42,12 @@ func (d *DefaultHandler) UpdateHandlerJSON(w http.ResponseWriter, r *http.Reques
 	err := json.Unmarshal(body, &metric)
 	if err != nil || metric.ID == "" {
 		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		body, status := d.processUpdate(metric)
-		w.WriteHeader(status)
-		if len(body) > 0 {
-			w.Write(body)
-		}
+		return
 	}
 
+	body, status := d.processUpdate(metric)
+	w.WriteHeader(status)
+	if len(body) > 0 {
+		w.Write(body)
+	}
 }

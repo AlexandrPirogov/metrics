@@ -61,17 +61,17 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 	mname := chi.URLParam(r, "mname")
 	if mtype == "" || mname == "" {
 		w.WriteHeader(http.StatusNotFound)
-	} else {
-		w.Header().Set("Content-Type", "text/html")
-		res, err := d.DB.ReadValueByParams(mtype, mname)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-
-		} else {
-			w.WriteHeader(http.StatusOK)
-		}
-		w.Write([]byte(res))
+		return
 	}
+	w.Header().Set("Content-Type", "text/html")
+	res, err := d.DB.ReadValueByParams(mtype, mname)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+	w.Write([]byte(res))
+
 }
 
 // UpdateHandler saves incoming metrics
@@ -86,15 +86,12 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	val := chi.URLParam(r, "val")
 	if mtype == "" || mname == "" || val == "" {
 		w.WriteHeader(http.StatusNotFound)
-	} else {
-		code := isUpdatePathCorrect(mtype, mname, val)
-		if code == http.StatusOK {
-			d.DB.Write(mtype, mname, val)
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(""))
-		} else {
-			w.WriteHeader(code)
-		}
+		return
+	}
+	code := isUpdatePathCorrect(mtype, mname, val)
+	w.WriteHeader(code)
+	if code == http.StatusOK {
+		d.DB.Write(mtype, mname, val)
 	}
 }
 
