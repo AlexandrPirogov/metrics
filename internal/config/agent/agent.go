@@ -38,21 +38,27 @@ type ClientConfig struct {
 }
 
 func Exec() {
+	initEnv()
+	initFlags()
+
+}
+
+func initEnv() {
 	if err := env.Parse(&ClientCfg); err != nil {
 		log.Fatalf("error while read client env variables %v", err)
 	}
-
-	if address != "" {
-		ClientCfg.Address = address
-	}
 }
 
-func init() {
+func initFlags() {
+
 	rootClientCmd.PersistentFlags().StringVarP(&address, "address", "a", "", "ADDRESS OF AGNET. Default value: localhost:8080")
 	rootClientCmd.PersistentFlags().StringVarP(&reportInterval, "report", "r", "", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
 	rootClientCmd.PersistentFlags().StringVarP(&pollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
 
 	if err := rootClientCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
+	}
+	if address != "" {
+		ClientCfg.Address = address
 	}
 }
