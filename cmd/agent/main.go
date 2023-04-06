@@ -22,11 +22,7 @@ func main() {
 
 	<-cancelChan
 	log.Printf("os.Interrupt-- shutting down...\n")
-	//We don't need to clear http.Client and stop it properly like server
-	go func() {
-		<-cancelChan
-		log.Fatalf("os.Kill -- terminating...\n")
-	}()
+
 	defer os.Exit(0)
 	close(cancelChan)
 }

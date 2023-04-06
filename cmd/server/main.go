@@ -38,10 +38,6 @@ func main() {
 	log.Printf("started server on %s\n", server.Addr)
 	<-cancelChan
 	log.Printf("os.Interrupt-- shutting down...\n")
-	go func() {
-		<-cancelChan
-		log.Fatalf("os.Kill -- terminating...\n")
-	}()
 
 	ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancelShutdown()
