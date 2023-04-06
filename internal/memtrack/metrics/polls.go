@@ -21,6 +21,7 @@ func (p *Polls) Read() error {
 	if p.PollCount > oldP {
 		return nil
 	} else {
+		p.PollCount = 0
 		//Overflow appears
 		return fmt.Errorf("overflow appeared")
 	}
