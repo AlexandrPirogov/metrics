@@ -33,6 +33,7 @@ var (
 	restore       bool   // Should db be restored
 	storeInterval string // period of replication
 	storeFile     string // file where replication is goint to be written
+	hash          string //key for hashing
 )
 
 // Configs
@@ -43,6 +44,7 @@ var (
 
 type ServerConfig struct {
 	Address string `env:"ADDRESS" envDefault:"localhost:8080"`
+	Hash    string `env:"KEY"`
 }
 
 type JournalConfig struct {
@@ -71,6 +73,8 @@ func initFlags() {
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
 	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
+	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
+
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -79,9 +83,14 @@ func initFlags() {
 		ServerCfg.Address = address
 	}
 
+	if hash != "" {
+		ServerCfg.Hash = hash
+	}
+
 	if storeInterval != DefaultStoreInterval {
 		JournalCfg.ReadInterval = storeInterval
 	}
+
 	if storeFile != DefaultFileStore {
 		JournalCfg.StoreFile = storeFile
 	}
