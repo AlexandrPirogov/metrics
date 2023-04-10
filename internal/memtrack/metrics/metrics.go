@@ -21,6 +21,7 @@ type Metrics struct {
 	MType string   `json:"type"`            // Metric type: gauge or counter
 	Delta *int64   `json:"delta,omitempty"` //Metric's val if passing counter
 	Value *float64 `json:"value,omitempty"` //Metric's val if passing gauge
+	Hash  string   `json:"hash,omitempty"`
 }
 
 func (m Metrics) MarshalJSON() ([]byte, error) {
