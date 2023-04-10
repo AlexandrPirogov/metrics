@@ -56,7 +56,7 @@ func initFlags() {
 	rootClientCmd.PersistentFlags().StringVarP(&address, "address", "a", "", "ADDRESS OF AGNET. Default value: localhost:8080")
 	rootClientCmd.PersistentFlags().StringVarP(&reportInterval, "report", "r", "", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
 	rootClientCmd.PersistentFlags().StringVarP(&pollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
-	rootClientCmd.PersistentFlags().StringVarP(&pollInterval, "key", "k", "", "key for encrypt data that's passes to server")
+	rootClientCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to server")
 
 	if err := rootClientCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
