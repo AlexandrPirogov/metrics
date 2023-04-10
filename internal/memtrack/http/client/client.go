@@ -3,8 +3,10 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"memtracker/internal/crypt"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
 )
@@ -32,6 +34,7 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 			ID:    k,
 			MType: metric.String(),
 			Delta: &del,
+			Hash:  crypt.Hash(fmt.Sprintf("%s:counter:%d", k, del)),
 		}
 		url := "http://" + c.Host + "/update/"
 
@@ -64,6 +67,7 @@ func (c Client) SendGauges(metric metrics.Metricable, mapMetrics map[string]inte
 			ID:    k,
 			MType: metric.String(),
 			Value: &val,
+			Hash:  crypt.Hash(fmt.Sprintf("%s:gauge:%f", k, val)),
 		}
 		url := "http://" + c.Host + "/update/"
 
