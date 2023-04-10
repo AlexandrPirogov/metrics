@@ -52,10 +52,8 @@ func (h httpMemTracker) send() {
 	for _, metric := range h.MetricsContainer.Metrics {
 		mapMetrics := metric.AsMap()
 		if metric.String() == "gauge" {
-			log.Printf("Sending gauges\n")
 			h.client.SendGauges(metric, mapMetrics)
 		} else {
-			log.Printf("counters gauges\n")
 			h.client.SendCounter(metric, mapMetrics)
 		}
 	}
