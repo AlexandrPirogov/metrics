@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"memtracker/internal/config/agent"
 	"memtracker/internal/crypt"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
@@ -27,6 +28,7 @@ type Client struct {
 
 func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]interface{}) {
 	log.Printf("sending to host: %s", c.Host)
+	key := agent.ClientCfg.Hash
 	for k, v := range mapMetrics {
 		val := v.(float64)
 		del := int64(val)
@@ -34,7 +36,7 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 			ID:    k,
 			MType: metric.String(),
 			Delta: &del,
-			Hash:  crypt.Hash(fmt.Sprintf("%s:counter:%d", k, del)),
+			Hash:  crypt.Hash(fmt.Sprintf("%s:counter:%d", k, del), key),
 		}
 		url := "http://" + c.Host + "/update/"
 
@@ -61,13 +63,14 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 
 func (c Client) SendGauges(metric metrics.Metricable, mapMetrics map[string]interface{}) {
 	log.Printf("sending to host: %s", c.Host)
+	key := agent.ClientCfg.Hash
 	for k, v := range mapMetrics {
 		val := v.(float64)
 		toMarsal := metrics.Metrics{
 			ID:    k,
 			MType: metric.String(),
 			Value: &val,
-			Hash:  crypt.Hash(fmt.Sprintf("%s:gauge:%f", k, val)),
+			Hash:  crypt.Hash(fmt.Sprintf("%s:gauge:%f", k, val), key),
 		}
 		url := "http://" + c.Host + "/update/"
 
