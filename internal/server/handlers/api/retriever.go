@@ -43,7 +43,7 @@ func (d *DefaultHandler) processRetrieveCounter(metric metrics.Metrics) ([]byte,
 	}
 
 	var tmp metrics.Metrics
-	err = json.Unmarshal(res, &tmp)
+	json.Unmarshal(res, &tmp)
 	tmp.Hash = crypt.Hash(fmt.Sprintf("%s:counter:%d", tmp.ID, *tmp.Delta), server.ServerCfg.Hash)
 	res, _ = json.Marshal(tmp)
 	return res, http.StatusOK
@@ -66,7 +66,7 @@ func (d *DefaultHandler) processRetrieveGauge(metric metrics.Metrics) ([]byte, i
 	}
 
 	var tmp metrics.Metrics
-	err = json.Unmarshal(res, &tmp)
+	json.Unmarshal(res, &tmp)
 	tmp.Hash = crypt.Hash(fmt.Sprintf("%s:gauge:%f", tmp.ID, *tmp.Value), server.ServerCfg.Hash)
 	res, _ = json.Marshal(tmp)
 	return res, http.StatusOK
