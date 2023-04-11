@@ -48,7 +48,7 @@ var (
 type ServerConfig struct {
 	Address string `env:"ADDRESS" envDefault:"localhost:8080"`
 	Hash    string `env:"KEY"`
-	DBUrl   string `env:"DATABASE_DNS"`
+	DBUrl   string `env:"DATABASE_DSN"`
 }
 
 type JournalConfig struct {
@@ -100,7 +100,7 @@ func initFlags() {
 		JournalCfg.StoreFile = storeFile
 	}
 
-	if dbUrl != DefaultDbUrl {
+	if ServerCfg.DBUrl == "" {
 		ServerCfg.DBUrl = dbUrl
 	}
 }
