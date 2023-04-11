@@ -1,7 +1,10 @@
 package api
 
 import (
+	"log"
+	"memtracker/internal/config/server"
 	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/server/db/sql/postgres"
 	"net/http"
 	"strconv"
 
@@ -37,6 +40,7 @@ type MetricsHandler interface {
 	RetrieveMetrics(w http.ResponseWriter, r *http.Request)
 	RetrieveMetric(w http.ResponseWriter, r *http.Request)
 	UpdateHandler(w http.ResponseWriter, r *http.Request)
+	PingHandler(w http.ResponseWriter, r *http.Request)
 
 	RetrieveMetricJSON(w http.ResponseWriter, r *http.Request)
 	UpdateHandlerJSON(w http.ResponseWriter, r *http.Request)
@@ -93,6 +97,21 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if code == http.StatusOK {
 		d.DB.Write(mtype, mname, val)
 	}
+}
+
+// UpdateHandler saves incoming metrics
+//
+// Pre-cond: given correct type, name and val of metrics
+//
+// Post-cond: correct metrics saved on server
+func (d *DefaultHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("db url %v", server.ServerCfg)
+	err := postgres.Ping()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 // isUpdatePathCorrect if given metric is correct

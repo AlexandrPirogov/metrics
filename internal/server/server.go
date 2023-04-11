@@ -31,6 +31,7 @@ func NewMetricServer(h api.MetricsHandler, ctx context.Context) *http.Server {
 		r.Post("/value/", h.RetrieveMetricJSON)
 	})
 
+	r.Get("/ping", h.PingHandler)
 	return &http.Server{
 		Addr:        cfg.Address,
 		Handler:     r,
