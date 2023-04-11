@@ -15,7 +15,7 @@ const (
 	DefaultStoreInterval = ""
 	DefaultHost          = ""
 	DefaultHash          = ""
-	DefaultDbUrl         = ""
+	DefaultDBURL         = ""
 	DefaultRestore       = true
 )
 
@@ -36,7 +36,7 @@ var (
 	storeInterval string // period of replication
 	storeFile     string // file where replication is goint to be written
 	hash          string //key for hashing
-	dbUrl         string // url connection for postgres
+	dbURL         string // url connection for postgres
 )
 
 // Configs
@@ -78,7 +78,7 @@ func initFlags() {
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
 	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
-	rootServerCmd.PersistentFlags().StringVarP(&dbUrl, "db", "d", "", "database url connection")
+	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
 
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
@@ -100,7 +100,7 @@ func initFlags() {
 		JournalCfg.StoreFile = storeFile
 	}
 
-	if ServerCfg.DBUrl == "" {
-		ServerCfg.DBUrl = dbUrl
+	if ServerCfg.DBUrl == DefaultDBURL {
+		ServerCfg.DBUrl = dbURL
 	}
 }

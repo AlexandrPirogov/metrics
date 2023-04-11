@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"log"
 	"memtracker/internal/config/server"
 	"os"
 
@@ -11,9 +10,8 @@ import (
 )
 
 func Ping() error {
-	PgUrl := server.ServerCfg.DBUrl
-	log.Printf("%s", PgUrl)
-	conn, err := pgx.Connect(context.Background(), PgUrl)
+	PgURL := server.ServerCfg.DBUrl
+	conn, err := pgx.Connect(context.Background(), PgURL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		return err
