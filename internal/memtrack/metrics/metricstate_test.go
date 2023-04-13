@@ -50,3 +50,18 @@ func TestCorrectCreateGaugeMetricStateFromGaugeMetric(t *testing.T) {
 	assert.EqualValues(t, metric.MType, sut.Type)
 	assert.EqualValues(t, metric.Value, sut.Value)
 }
+
+func TestCounterToTuple(t *testing.T) {
+	var val = counter(1)
+	sut := CounterState{
+		Name:  "qwe",
+		Type:  "counter",
+		Value: &val,
+	}
+
+	tuple := sut.ToTuple()
+
+	assert.EqualValues(t, tuple.GetField("name"), sut.Name)
+	assert.EqualValues(t, tuple.GetField("type"), sut.Type)
+	assert.EqualValues(t, tuple.GetField("value"), sut.Value)
+}
