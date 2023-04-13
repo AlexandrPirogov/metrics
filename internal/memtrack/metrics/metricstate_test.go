@@ -65,3 +65,18 @@ func TestCounterToTuple(t *testing.T) {
 	assert.EqualValues(t, tuple.GetField("type"), sut.Type)
 	assert.EqualValues(t, tuple.GetField("value"), sut.Value)
 }
+
+func TestGaugeToTuple(t *testing.T) {
+	var val = gauge(1.11111)
+	sut := GaugeState{
+		Name:  "qwe",
+		Type:  "gauge",
+		Value: &val,
+	}
+
+	tuple := sut.ToTuple()
+
+	assert.EqualValues(t, tuple.GetField("name"), sut.Name)
+	assert.EqualValues(t, tuple.GetField("type"), sut.Type)
+	assert.EqualValues(t, tuple.GetField("value"), sut.Value)
+}
