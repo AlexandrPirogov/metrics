@@ -21,7 +21,7 @@ func TestTupleSetKey(t *testing.T) {
 		},
 	}
 	sut := Tuple{
-		fields: make(map[string]interface{}),
+		Fields: make(map[string]interface{}),
 	}
 
 	for k, expectedValue := range cases {
