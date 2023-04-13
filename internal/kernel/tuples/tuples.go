@@ -1,5 +1,9 @@
 package tuples
 
+type Tupler interface {
+	ToTuple() Tuple
+}
+
 type Tuple struct {
 	fields map[string]interface{}
 }
@@ -13,8 +17,4 @@ func (t *Tuple) GetField(key string) interface{} {
 		return val
 	}
 	return nil
-}
-
-type Tupler interface {
-	ToTuple(interface{}) Tuple
 }
