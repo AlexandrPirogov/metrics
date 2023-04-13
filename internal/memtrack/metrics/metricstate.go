@@ -12,7 +12,7 @@ type CounterState struct {
 }
 
 type GaugeState struct {
-	Name  string `json:"id"`            //Metric name
-	Type  string `json:"type"`          // Metric type: gauge or counter
-	Value *gauge `json:"val,omitempty"` //Metric's val if passing counter
+	Name  string `json:"id"`              //Metric name
+	Type  string `json:"type"`            // Metric type: gauge or counter
+	Value *gauge `json:"value,omitempty"` //Metric's val if passing counter
 }
