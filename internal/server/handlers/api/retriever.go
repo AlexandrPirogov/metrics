@@ -2,9 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
-	"memtracker/internal/config/server"
-	"memtracker/internal/crypt"
+	"memtracker/internal/kernel"
+	"memtracker/internal/kernel/tuples"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
 )
@@ -15,15 +14,20 @@ import (
 //
 // Post-cond: If success, returns slice of bytes and http status = 200
 // otherwise returns empty bite slice and corresponging http status
-func (d *DefaultHandler) processRetrieve(metric metrics.Metrics) ([]byte, int) {
-	switch {
-	case metric.MType == "gauge":
-		return d.processRetrieveGauge(metric)
-	case metric.MType == "counter":
-		return d.processRetrieveCounter(metric)
-	default:
-		return []byte{}, http.StatusNotImplemented
+func (d *DefaultHandler) processRetrieve(m tuples.Tupler) ([]byte, int) {
+	query := m.ToTuple()
+	res, err := kernel.Read(d.DB.Storage, query)
+	if err != nil || len(res) == 0 {
+		return []byte{}, http.StatusNotFound
 	}
+
+	body := []byte{}
+	for _, tuple := range res {
+		m, _ := metrics.FromTuple(tuple)
+		b, _ := json.Marshal(m)
+		body = append(body, b...)
+	}
+	return body, http.StatusOK
 }
 
 // processRetrieve retrieve stored counter metric value
@@ -37,16 +41,19 @@ func (d *DefaultHandler) processRetrieveCounter(metric metrics.Metrics) ([]byte,
 		return []byte{}, http.StatusBadRequest
 	}
 
-	res, err := d.DB.ReadByParams(metric.MType, metric.ID)
+	query := metric.ToTuple()
+	res, err := kernel.Read(d.DB.Storage, query)
 	if err != nil {
 		return []byte{}, http.StatusNotFound
 	}
+	body := []byte{}
+	for _, tuple := range res {
+		m, _ := metrics.FromTuple(tuple)
+		b, _ := json.Marshal(m)
+		body = append(body, b...)
+	}
 
-	var tmp metrics.Metrics
-	json.Unmarshal(res, &tmp)
-	tmp.Hash = crypt.Hash(fmt.Sprintf("%s:counter:%d", tmp.ID, *tmp.Delta), server.ServerCfg.Hash)
-	res, _ = json.Marshal(tmp)
-	return res, http.StatusOK
+	return body, http.StatusOK
 }
 
 // processRetrieve retrieve stored gauge metric value
@@ -60,14 +67,17 @@ func (d *DefaultHandler) processRetrieveGauge(metric metrics.Metrics) ([]byte, i
 		return []byte{}, http.StatusBadRequest
 	}
 
-	res, err := d.DB.ReadByParams(metric.MType, metric.ID)
+	query := metric.ToTuple()
+	res, err := kernel.Read(d.DB.Storage, query)
 	if err != nil {
 		return []byte{}, http.StatusNotFound
 	}
+	body := []byte{}
+	for _, tuple := range res {
+		m, _ := metrics.FromTuple(tuple)
+		b, _ := json.Marshal(m)
+		body = append(body, b...)
+	}
 
-	var tmp metrics.Metrics
-	json.Unmarshal(res, &tmp)
-	tmp.Hash = crypt.Hash(fmt.Sprintf("%s:gauge:%f", tmp.ID, *tmp.Value), server.ServerCfg.Hash)
-	res, _ = json.Marshal(tmp)
-	return res, http.StatusOK
+	return body, http.StatusOK
 }

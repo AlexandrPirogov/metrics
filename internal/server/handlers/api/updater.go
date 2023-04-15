@@ -6,6 +6,7 @@ import (
 	"log"
 	"memtracker/internal/config/server"
 	"memtracker/internal/crypt"
+	"memtracker/internal/kernel"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
 )
@@ -41,21 +42,23 @@ func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, i
 	}
 
 	key := server.ServerCfg.Hash
-	log.Println("hashinh from server")
+
 	check := crypt.Hash(fmt.Sprintf("%s:counter:%d", metric.ID, *metric.Delta), key)
 	if metric.Hash != check {
 		log.Printf("Hashes are not equals: \ngot:%s \nhashed:%s", metric.Hash, check)
 		return []byte{}, http.StatusBadRequest
 	}
-	d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
-	res, _ := d.DB.ReadByParams(metric.MType, metric.ID)
-	var tmp metrics.Metrics
-	json.Unmarshal(res, &tmp)
-	tmp.Hash = crypt.Hash(fmt.Sprintf("%s:counter:%d", tmp.ID, *tmp.Delta), server.ServerCfg.Hash)
-	res, _ = json.Marshal(tmp)
 
-	log.Printf("Body 1after hash: %s", res)
-	return res, http.StatusOK
+	tuple := metric.ToTuple()
+	res, err := kernel.Write(d.DB.Storage, tuple)
+	if err != nil {
+		return []byte{}, http.StatusBadRequest
+	}
+
+	body, _ := json.Marshal(res)
+	log.Printf("wrote %s", body)
+	go func() { d.DB.Journaler.Write(body) }()
+	return body, http.StatusOK
 }
 
 // processUpdateCounter updates update metric
@@ -77,12 +80,12 @@ func (d *DefaultHandler) processUpdateGauge(metric metrics.Metrics) ([]byte, int
 		return []byte{}, http.StatusBadRequest
 	}
 
-	res, _ := d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
-
-	var tmp metrics.Metrics
-	json.Unmarshal(res, &tmp)
-	tmp.Hash = crypt.Hash(fmt.Sprintf("%s:gauge:%f", tmp.ID, *tmp.Value), server.ServerCfg.Hash)
-	res, _ = json.Marshal(tmp)
-	log.Printf("Body 1after hash: %s", res)
-	return res, http.StatusOK
+	tuple := metric.ToTuple()
+	res, err := kernel.Write(d.DB.Storage, tuple)
+	if err != nil {
+		return []byte{}, http.StatusBadGateway
+	}
+	body, _ := json.Marshal(res)
+	go func() { d.DB.Journaler.Write(body) }()
+	return body, http.StatusOK
 }

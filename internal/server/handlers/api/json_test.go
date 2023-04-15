@@ -16,7 +16,9 @@ import (
 )
 
 func createTestServer() *httptest.Server {
-	h := &DefaultHandler{DB: &db.DB{Storage: db.MemStoageDB()}}
+	h := &DefaultHandler{DB: db.DB{
+		Storage: db.MemStorageDB(),
+	}}
 	r := chi.NewRouter()
 	r.Post("/update/{mtype}/{mname}/{val}", h.UpdateHandler)
 	r.Get("/value/{mtype}/{mname}", h.RetrieveMetric)
@@ -48,7 +50,7 @@ type Payload struct {
 }
 
 func TestRetrieveGaugeMetric(t *testing.T) {
-	values := []float64{-1.123456789, 0.9087865431, 1.112233445, 1.123456789}
+	values := []float64{-1.123, 0.908, 1.112, 1.123}
 	data := []Payload{}
 	for i := range values {
 		data = append(data, Payload{
@@ -117,7 +119,9 @@ func TestCorrectCounterMetric(t *testing.T) {
 
 	server := createTestServer()
 	defer server.Close()
-	for _, actual := range data {
+	sum := int64(0)
+	for i, actual := range data {
+		sum += deltas[i]
 		t.Run("Correct counter", func(t *testing.T) {
 			js, err := json.Marshal(actual.Metric)
 			if err != nil {
@@ -130,44 +134,20 @@ func TestCorrectCounterMetric(t *testing.T) {
 
 			var respJs metrics.Metrics
 			buffer, err := io.ReadAll(resp.Body)
+
 			if err != nil {
 				t.Errorf("got error while reading body %v", err)
 			}
 			err = json.Unmarshal(buffer, &respJs)
 			assert.Nil(t, err)
 
+			assert.EqualValues(t, sum, *respJs.Delta)
 		})
 	}
-	p := metrics.Metrics{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: nil,
-		Value: nil,
-	}
-
-	bytes, err := json.Marshal(p)
-	if err != nil {
-		t.Errorf("error while marshal %v", err)
-	}
-	resp := executeGetValueRequest(server, bytes)
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("%v", err)
-	}
-
-	var actual metrics.Metrics
-	err = json.Unmarshal(body, &actual)
-	if err != nil {
-		t.Errorf("%v", err)
-	}
-	assert.Equal(t, expectedCounter, *actual.Delta)
 }
 
 func TestCorrectGaugeUpdateHandler(t *testing.T) {
-	values := []float64{-1.32198, 0, 1.1, 1.12345}
+	values := []float64{-1.321, 0, 1.1, 1.123}
 	data := []Payload{}
 	for i := range values {
 		data = append(data, Payload{

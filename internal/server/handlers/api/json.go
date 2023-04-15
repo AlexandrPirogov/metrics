@@ -23,7 +23,8 @@ func (d *DefaultHandler) RetrieveMetricJSON(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	body, status := d.processRetrieve(metric)
+	metricState := metric.ToTuple()
+	body, status := d.processRetrieve(metricState)
 	w.WriteHeader(status)
 	if len(body) > 0 {
 		w.Write(body)
@@ -40,6 +41,7 @@ func (d *DefaultHandler) UpdateHandlerJSON(w http.ResponseWriter, r *http.Reques
 	var metric metrics.Metrics
 	body, _ := io.ReadAll(r.Body)
 	err := json.Unmarshal(body, &metric)
+
 	if err != nil || metric.ID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return

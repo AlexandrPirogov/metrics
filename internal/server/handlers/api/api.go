@@ -1,10 +1,15 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"memtracker/internal/config/server"
+	"memtracker/internal/kernel"
+	"memtracker/internal/kernel/tuples"
 	"memtracker/internal/memtrack/metrics"
-	"memtracker/internal/server/db/sql/postgres"
+	"memtracker/internal/server/db"
+	"memtracker/internal/server/db/storage/sql/postgres"
 	"net/http"
 	"strconv"
 
@@ -12,42 +17,12 @@ import (
 )
 
 type MetricsStorer interface {
-	// Reads all metrics and returns their string representation
-	Read() []byte
-	// Read metrics with given type and name.
-	//
-	// Pre-cond: Given correct mtype and mname
-	//
-	// Post-cond: Returns suitable metrics according to given mtype and mname
-	ReadByParams(mtype string, mname string) ([]byte, error)
-	// Read metrics value with given type and name.
-	//
-	// Pre-cond: Given correct mtype and mname
-	//
-	// Post-cond: Returns current metrics value according to given mtype and mname
-	ReadValueByParams(mtype string, mname string) ([]byte, error)
-	// Writes metric in store
-	//
-	// Pre-cond: given correct type name and value of metric
-	//
-	// Post-cond: stores metric in storage. If success error equals nil
-	Write(mtype string, mname string, val string) ([]byte, error)
-
-	Start()
-}
-
-type MetricsHandler interface {
-	RetrieveMetrics(w http.ResponseWriter, r *http.Request)
-	RetrieveMetric(w http.ResponseWriter, r *http.Request)
-	UpdateHandler(w http.ResponseWriter, r *http.Request)
-	PingHandler(w http.ResponseWriter, r *http.Request)
-
-	RetrieveMetricJSON(w http.ResponseWriter, r *http.Request)
-	UpdateHandlerJSON(w http.ResponseWriter, r *http.Request)
+	Write(tuple tuples.Tupler) (tuples.Tupler, error)
+	Read(condition tuples.Tupler) ([]tuples.Tupler, error)
 }
 
 type DefaultHandler struct {
-	DB MetricsStorer
+	DB db.DB
 }
 
 // RetrieveMetric return all contained metrics
@@ -55,7 +30,20 @@ func (d *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(d.DB.Read()))
+
+	query := tuples.NewTuple()
+	query.SetField("name", "*")
+	query.SetField("type", "*")
+	res, _ := kernel.Read(d.DB.Storage, query)
+	log.Printf("res afte read%v", res)
+	body := []byte{}
+
+	for _, tuple := range res {
+		m, _ := metrics.FromTuple(tuple)
+		b, _ := json.Marshal(m)
+		body = append(body, b...)
+	}
+	w.Write(body)
 
 }
 
@@ -68,13 +56,29 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
-	res, err := d.DB.ReadValueByParams(mtype, mname)
-	if err != nil {
+
+	query := tuples.NewTuple()
+	query.SetField("name", mname)
+	query.SetField("type", mtype)
+	res, _ := kernel.Read(d.DB.Storage, query)
+
+	if len(res) == 0 {
 		w.WriteHeader(http.StatusNotFound)
-	} else {
-		w.WriteHeader(http.StatusOK)
+		return
 	}
-	w.Write([]byte(res))
+	for _, tuple := range res {
+		if mtype == "gauge" {
+			val, _ := tuple.GetField("value")
+			valStr := val.(*float64)
+			valB := fmt.Sprintf("%.20f", *valStr)
+			w.Write([]byte(valB))
+		} else {
+			val, _ := tuple.GetField("value")
+			valStr := val.(*int64)
+			valB := fmt.Sprintf("%d", *valStr)
+			w.Write([]byte(valB))
+		}
+	}
 
 }
 
@@ -92,10 +96,22 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+
 	code := isUpdatePathCorrect(mtype, mname, val)
+	metricState, err := metrics.CreateState(mname, mtype, val)
+	if err != nil {
+		switch err.Error() {
+		case "nil value":
+			w.WriteHeader(http.StatusBadRequest)
+		default:
+			w.WriteHeader(http.StatusNotImplemented)
+		}
+		return
+	}
+
 	w.WriteHeader(code)
 	if code == http.StatusOK {
-		d.DB.Write(mtype, mname, val)
+		kernel.Write(d.DB.Storage, metricState)
 	}
 }
 
