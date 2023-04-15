@@ -18,10 +18,15 @@ func main() {
 	config.Exec()
 	ctx, cancel := context.WithCancel(context.Background())
 
-	handler := &api.DefaultHandler{DB: &db.DB{
-		Storage:   db.MemStoageDB(),
-		Journaler: journal.NewJournal(),
-	}}
+	if config.DefaultDBURL == "" {
+	}
+
+	handler := &api.DefaultHandler{
+		DB: db.DB{
+			Storage:   db.MemStorageDB(),
+			Journaler: journal.NewJournal(),
+		},
+	}
 	server := server.NewMetricServer(handler, ctx)
 	handler.DB.Start()
 
