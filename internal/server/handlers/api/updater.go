@@ -55,7 +55,8 @@ func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, i
 		return []byte{}, http.StatusBadRequest
 	}
 
-	body, _ := json.Marshal(res)
+	m := metrics.ConvertToMetric(res)
+	body, _ := json.Marshal(m)
 	log.Printf("wrote %s", body)
 	go func() { d.DB.Journaler.Write(body) }()
 	return body, http.StatusOK
@@ -76,16 +77,19 @@ func (d *DefaultHandler) processUpdateGauge(metric metrics.Metrics) ([]byte, int
 	key := server.ServerCfg.Hash
 	check := crypt.Hash(fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value), key)
 	if metric.Hash != check {
-		log.Printf("Hashes are not equals: \ngot:%s \nhashed:%s", metric.Hash, check)
 		return []byte{}, http.StatusBadRequest
 	}
 
 	tuple := metric.ToTuple()
+
 	res, err := kernel.Write(d.DB.Storage, tuple)
 	if err != nil {
 		return []byte{}, http.StatusBadGateway
 	}
-	body, _ := json.Marshal(res)
+
+	m := metrics.ConvertToMetric(res)
+
+	body, _ := json.Marshal(m)
 	go func() { d.DB.Journaler.Write(body) }()
 	return body, http.StatusOK
 }
