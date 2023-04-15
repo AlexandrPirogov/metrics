@@ -23,8 +23,8 @@ func (d *DefaultHandler) processRetrieve(m tuples.Tupler) ([]byte, int) {
 
 	body := []byte{}
 	for _, tuple := range res {
-		m, _ := metrics.FromTuple(tuple)
-		b, _ := json.Marshal(m)
+		res := metrics.ConvertToMetric(tuple)
+		b, _ := json.Marshal(res)
 		body = append(body, b...)
 	}
 	return body, http.StatusOK
@@ -42,17 +42,12 @@ func (d *DefaultHandler) processRetrieveCounter(metric metrics.Metrics) ([]byte,
 	}
 
 	query := metric.ToTuple()
-	res, err := kernel.Read(d.DB.Storage, query)
+	tuples, err := kernel.Read(d.DB.Storage, query)
 	if err != nil {
 		return []byte{}, http.StatusNotFound
 	}
-	body := []byte{}
-	for _, tuple := range res {
-		m, _ := metrics.FromTuple(tuple)
-		b, _ := json.Marshal(m)
-		body = append(body, b...)
-	}
 
+	body := d.marshalTuples(tuples)
 	return body, http.StatusOK
 }
 
@@ -68,16 +63,28 @@ func (d *DefaultHandler) processRetrieveGauge(metric metrics.Metrics) ([]byte, i
 	}
 
 	query := metric.ToTuple()
-	res, err := kernel.Read(d.DB.Storage, query)
+	tuples, err := kernel.Read(d.DB.Storage, query)
 	if err != nil {
 		return []byte{}, http.StatusNotFound
 	}
+
+	body := d.marshalTuples(tuples)
+	return body, http.StatusOK
+}
+
+// marshalTuples marshal tuples in slice to slice of bytes
+//
+// Pre-cond: given slice of tuples
+//
+// Post-cond: return slice of bytes
+func (d *DefaultHandler) marshalTuples(tuples []tuples.Tupler) []byte {
 	body := []byte{}
-	for _, tuple := range res {
-		m, _ := metrics.FromTuple(tuple)
-		b, _ := json.Marshal(m)
+	for _, tuple := range tuples {
+		b, err := json.Marshal(tuple)
+		if err != nil {
+			continue
+		}
 		body = append(body, b...)
 	}
-
-	return body, http.StatusOK
+	return body
 }
