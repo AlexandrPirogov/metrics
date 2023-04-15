@@ -26,8 +26,9 @@ func TestTupleSetKey(t *testing.T) {
 
 	for k, expectedValue := range cases {
 		sut.SetField(k, expectedValue)
-		actual := sut.GetField(k)
+		actual, ok := sut.GetField(k)
 
+		assert.True(t, ok)
 		assert.EqualValues(t, expectedValue, actual)
 	}
 
