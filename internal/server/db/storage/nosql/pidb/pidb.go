@@ -15,11 +15,18 @@ type MemStorage struct {
 	Metrics map[string]map[string]tuples.Tupler
 }
 
+// Write writes given tuple to Database
+//
+// Pre-cond: given tuple to write
+//
+// Post-cond: depends on sucsess
+// If success then state was written to database and returned written tuple and error = nil
+// Otherwise returns nil and error
 func (p *MemStorage) Write(state tuples.Tupler) (tuples.Tupler, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
-	mtype := p.extractString("type", state)
-	mname := p.extractString("name", state)
+	mtype := tuples.ExtractString("type", state)
+	mname := tuples.ExtractString("name", state)
 
 	if metrics.IsMetricCorrect(mtype, mname) != nil {
 		errMsg := fmt.Sprintf("given not existing metric %s %s\n", mtype, mname)
@@ -37,14 +44,18 @@ func (p *MemStorage) Write(state tuples.Tupler) (tuples.Tupler, error) {
 	return newState, nil
 }
 
+// Read reads tuples from database by given query
+//
+// Pre-cond: given query tuple
+// Post-cond: return tuples that satisfies given query
 func (p *MemStorage) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
-	//TODO
 
-	mtype := p.extractString("type", state)
-	mname := p.extractString("name", state)
+	mtype := tuples.ExtractString("type", state)
+	mname := tuples.ExtractString("name", state)
 	res := make([]tuples.Tupler, 0)
+	// Here will be another refactor
 	switch mname {
 	case "*":
 		// ReadAlllTypes
