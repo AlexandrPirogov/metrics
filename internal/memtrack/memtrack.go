@@ -37,7 +37,6 @@ func (h httpMemTracker) ReadAndSend() {
 	readTicker := time.NewTicker(time.Second * time.Duration(h.PollInterval))
 	sendTicker := time.NewTicker(time.Second * time.Duration(h.ReportInterval))
 	for {
-		//TODO: fix race condition. Read about mutexes in Go
 		select {
 		case <-readTicker.C:
 			h.update()
