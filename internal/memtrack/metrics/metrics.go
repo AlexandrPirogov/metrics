@@ -10,7 +10,6 @@ package metrics
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"memtracker/internal/kernel/tuples"
 	"strconv"
@@ -44,6 +43,35 @@ func (m Metrics) ToTuple() tuples.Tupler {
 	}
 
 	return tuple
+}
+
+func ConvertToMetric(t tuples.Tupler) tuples.Tupler {
+	mname := tuples.ExtractString("name", t)
+	mtype := tuples.ExtractString("type", t)
+	switch t.(type) {
+	case GaugeState:
+		val := tuples.ExtractFloat64Pointer("value", t)
+		if val == nil {
+			return nil
+		}
+		metr, err := CreateState(mname, mtype, fmt.Sprintf("%.20f", *val))
+		if err != nil {
+			return nil
+		}
+		return metr
+	case CounterState:
+		val := tuples.ExtractInt64Pointer("value", t)
+		if val == nil {
+			return nil
+		}
+		metr, err := CreateState(mname, mtype, fmt.Sprintf("%d", *val))
+		if err != nil {
+			return nil
+		}
+		return metr
+	default:
+		return nil
+	}
 }
 
 func (m Metrics) MarshalJSON() ([]byte, error) {
@@ -159,31 +187,4 @@ func checkFields(metric Metricable, mtype string, name string) error {
 		}
 	}
 	return fmt.Errorf("field %s not found in %s", name, mtype)
-}
-
-func FromTuple(t tuples.Tupler) (Metrics, error) {
-	m := Metrics{}
-	name, ok := t.GetField("name")
-	if !ok {
-		return m, errors.New("name field required for metrics")
-	}
-	mtype, ok := t.GetField("type")
-	if !ok {
-		return m, errors.New("type field required for metrics")
-	}
-
-	val, ok := t.GetField("value")
-	if !ok {
-		return m, errors.New("value field is required for metrics")
-	}
-
-	m.ID = name.(string)
-	m.MType = mtype.(string)
-	switch mtype {
-	case "gauge":
-		m.Value = val.(*float64)
-	case "counter":
-		m.Delta = val.(*int64)
-	}
-	return m, nil
 }

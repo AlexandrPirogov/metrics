@@ -2,7 +2,10 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"memtracker/internal/config/server"
+	"memtracker/internal/crypt"
 	"memtracker/internal/kernel/tuples"
 	"strconv"
 )
@@ -28,10 +31,13 @@ func createGaugeState(mname, mtype, mvalue string) (tuples.Tupler, error) {
 		}, nil
 	}
 
+	hash := crypt.Hash(fmt.Sprintf("%s:gauge:%f", mname, float64Val), server.ServerCfg.Hash)
+
 	return GaugeState{
 		Name:  mname,
 		Type:  mtype,
 		Value: &float64Val,
+		Hash:  hash,
 	}, nil
 }
 
@@ -45,10 +51,12 @@ func createCounterState(mname, mtype, mvalue string) (tuples.Tupler, error) {
 		}, err
 	}
 
+	hash := crypt.Hash(fmt.Sprintf("%s:counter:%d", mname, int64Val), server.ServerCfg.Hash)
 	return CounterState{
 		Name:  mname,
 		Type:  mtype,
 		Value: &int64Val,
+		Hash:  hash,
 	}, nil
 }
 
@@ -57,6 +65,7 @@ type CounterState struct {
 	Name  string `json:"id"`              //Metric name
 	Type  string `json:"type"`            // Metric type: gauge or counter
 	Value *int64 `json:"delta,omitempty"` //Metric's val if passing counter
+	Hash  string `json:"hash,omitempty"`
 }
 
 // ToTuple convers CounterState to tuple.Tuple
@@ -144,6 +153,7 @@ type GaugeState struct {
 	Name  string   `json:"id"`              //Metric name
 	Type  string   `json:"type"`            // Metric type: gauge or counter
 	Value *float64 `json:"value,omitempty"` //Metric's val if passing counter
+	Hash  string   `json:"hash,omitempty"`
 }
 
 // ToTuple convers GaugeState to tuple.Tuple
@@ -208,3 +218,5 @@ func (g GaugeState) GetField(key string) (interface{}, bool) {
 func (g GaugeState) Aggregate(with tuples.Tupler) (tuples.Tupler, error) {
 	return g, nil
 }
+
+// FromTable convers tuple to Metrics
