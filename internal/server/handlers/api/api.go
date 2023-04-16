@@ -85,7 +85,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 		if mtype == "gauge" {
 			val, _ := tuple.GetField("value")
 			valStr := val.(*float64)
-			valB := fmt.Sprintf("%.20f", *valStr)
+			valB := fmt.Sprintf("%.3f", *valStr)
 			w.Write([]byte(valB))
 		} else {
 			val, _ := tuple.GetField("value")
@@ -113,6 +113,10 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	code := isUpdatePathCorrect(mtype, mname, val)
+	if code != http.StatusOK {
+		w.WriteHeader(code)
+		return
+	}
 	metricState, err := metrics.CreateState(mname, mtype, val)
 	if err != nil {
 		switch err.Error() {
@@ -124,10 +128,14 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(code)
-	if code == http.StatusOK {
-		kernel.Write(d.DB.Storage, metricState)
+	_, err = kernel.Write(d.DB.Storage, metricState)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // UpdateHandler saves incoming metrics
