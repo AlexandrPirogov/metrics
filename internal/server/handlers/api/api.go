@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel"
 	"memtracker/internal/kernel/tuples"
 	"memtracker/internal/memtrack/metrics"
 	"memtracker/internal/server/db"
+	"memtracker/internal/server/db/journal"
 	"memtracker/internal/server/db/storage/sql/postgres"
 	"net/http"
 	"strconv"
@@ -16,9 +18,23 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type MetricsStorer interface {
-	Write(tuple tuples.Tupler) (tuples.Tupler, error)
-	Read(condition tuples.Tupler) ([]tuples.Tupler, error)
+func NewHandler() *DefaultHandler {
+	if server.ServerCfg.DBUrl == "" {
+		return &DefaultHandler{
+			DB: db.DB{
+				Storage:   db.MemStorageDB(),
+				Journaler: journal.NewJournal(),
+			},
+		}
+	} else {
+		return &DefaultHandler{
+			DB: db.DB{
+				Storage:   postgres.NewPg(),
+				Journaler: journal.NewJournal(),
+			},
+		}
+	}
+
 }
 
 type DefaultHandler struct {
@@ -39,8 +55,7 @@ func (d *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request)
 	body := []byte{}
 
 	for _, tuple := range res {
-		m, _ := metrics.FromTuple(tuple)
-		b, _ := json.Marshal(m)
+		b, _ := json.Marshal(tuple)
 		body = append(body, b...)
 	}
 	w.Write(body)
