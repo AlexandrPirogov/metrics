@@ -92,7 +92,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 		if mtype == "gauge" {
 			val, _ := tuple.GetField("value")
 			valStr := val.(*float64)
-			valB := fmt.Sprintf("%.3f", *valStr)
+			valB := strconv.FormatFloat(*valStr, 'f', -3, 64)
 			w.Write([]byte(valB))
 		} else {
 			val, _ := tuple.GetField("value")
