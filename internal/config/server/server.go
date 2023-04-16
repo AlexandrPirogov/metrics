@@ -99,8 +99,6 @@ func initFlags() {
 	if storeFile != DefaultFileStore {
 		JournalCfg.StoreFile = storeFile
 	}
+	ServerCfg.DBUrl = dbURL
 
-	if ServerCfg.DBUrl == DefaultDBURL {
-		ServerCfg.DBUrl = dbURL
-	}
 }
