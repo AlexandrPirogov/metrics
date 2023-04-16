@@ -19,20 +19,24 @@ import (
 )
 
 func NewHandler() *DefaultHandler {
-	if server.ServerCfg.DBUrl == "" {
-		return &DefaultHandler{
-			DB: db.DB{
-				Storage:   db.MemStorageDB(),
-				Journaler: journal.NewJournal(),
-			},
+	if server.ServerCfg.DBUrl != "" {
+		err := postgres.Ping()
+		if err == nil {
+			return &DefaultHandler{
+				DB: db.DB{
+					Storage:   postgres.NewPg(),
+					Journaler: journal.NewJournal(),
+				},
+			}
 		}
-	} else {
-		return &DefaultHandler{
-			DB: db.DB{
-				Storage:   postgres.NewPg(),
-				Journaler: journal.NewJournal(),
-			},
-		}
+
+	}
+
+	return &DefaultHandler{
+		DB: db.DB{
+			Storage:   db.MemStorageDB(),
+			Journaler: journal.NewJournal(),
+		},
 	}
 
 }
@@ -146,6 +150,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 func (d *DefaultHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("db url %v", server.ServerCfg)
 	err := postgres.Ping()
+	log.Printf("ping err %v", err)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

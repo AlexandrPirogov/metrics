@@ -81,7 +81,9 @@ func (p *Postgres) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
 
 func Ping() error {
 	conn := connection()
-
+	if conn == nil {
+		return errors.New("connection is nil")
+	}
 	defer conn.Close(context.Background())
 	err := conn.Ping(context.Background())
 	if err != nil {
@@ -209,7 +211,6 @@ func connection() *pgx.Conn {
 	log.Printf("Url:%s", PgURL)
 	conn, err := pgx.Connect(context.Background(), PgURL)
 	if err != nil {
-		log.Fatalf("%v", err)
 		return nil
 	}
 	return conn
