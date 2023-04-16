@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel/tuples"
 	"memtracker/internal/memtrack/metrics"
+	"os"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -221,7 +221,7 @@ func connection() *pgx.Conn {
 
 func Migrate(c *pgx.Conn) {
 	path := "internal/server/db/storage/sql/postgres/init.sql"
-	body, err := ioutil.ReadFile(path)
+	body, err := os.ReadFile(path)
 	if err != nil {
 		log.Printf("Error while read%v", err)
 	}
