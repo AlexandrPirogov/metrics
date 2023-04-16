@@ -30,7 +30,6 @@ type Postgres struct {
 // If success then state was written to database and returned written tuple and error = nil
 // Otherwise returns nil and error
 func (p *Postgres) Write(state tuples.Tupler) (tuples.Tupler, error) {
-
 	mname := tuples.ExtractString("name", state)
 	mtype := tuples.ExtractString("type", state)
 
@@ -46,11 +45,12 @@ func (p *Postgres) Write(state tuples.Tupler) (tuples.Tupler, error) {
 		val := tuples.ExtractInt64Pointer("value", state)
 		res, err := p.WriteCounteres(mname, val)
 		if err != nil {
+			log.Printf("err counter %V", err)
 			return nil, err
 		}
 		return res[0], nil
 	default:
-		return nil, errors.New("given type not exists")
+		return state, nil
 	}
 }
 
@@ -59,8 +59,8 @@ func (p *Postgres) Write(state tuples.Tupler) (tuples.Tupler, error) {
 // Pre-cond: given query tuple
 // Post-cond: return tuples that satisfies given query
 func (p *Postgres) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
-	mname := tuples.ExtractString("type", state)
-	mtype := tuples.ExtractString("name", state)
+	mname := tuples.ExtractString("name", state)
+	mtype := tuples.ExtractString("type", state)
 
 	switch mtype {
 	case "gauge":
@@ -75,7 +75,7 @@ func (p *Postgres) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
 		gauges = append(gauges, counters...)
 		return gauges, nil
 	default:
-		return nil, errors.New("bad")
+		return []tuples.Tupler{}, nil
 	}
 }
 
@@ -93,7 +93,7 @@ func Ping() error {
 }
 
 func (p *Postgres) ReadGauges(cond string) ([]tuples.Tupler, error) {
-	query := fmt.Sprintf("SELECT READ_METRIC('gauge', '%s')", cond)
+	query := fmt.Sprintf("SELECT * from READ_METRIC('gauge', '%s')", cond)
 	rows, err := p.conn.Query(context.Background(), query)
 	if err != nil {
 		return nil, err
@@ -211,6 +211,7 @@ func connection() *pgx.Conn {
 	log.Printf("Url:%s", PgURL)
 	conn, err := pgx.Connect(context.Background(), PgURL)
 	if err != nil {
+		log.Printf("conn err :%v", err)
 		return nil
 	}
 	return conn
