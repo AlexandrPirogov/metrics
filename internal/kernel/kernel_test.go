@@ -14,8 +14,7 @@ type storeStub struct {
 }
 
 func (s *storeStub) Write(t tuples.Tupler) (tuples.Tupler, error) {
-	//TODO
-	mtype, _ := t.GetField("type")
+	mtype := tuples.ExtractString("type", t)
 	switch mtype {
 	case "gauge":
 		return t, nil

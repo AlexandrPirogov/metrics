@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+
 	"memtracker/internal/config/server"
 	"memtracker/internal/crypt"
 	"memtracker/internal/kernel/tuples"
@@ -218,5 +219,3 @@ func (g GaugeState) GetField(key string) (interface{}, bool) {
 func (g GaugeState) Aggregate(with tuples.Tupler) (tuples.Tupler, error) {
 	return g, nil
 }
-
-// FromTable convers tuple to Metrics
