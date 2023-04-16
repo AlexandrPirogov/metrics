@@ -5,8 +5,6 @@ import (
 	"log"
 	config "memtracker/internal/config/server"
 	"memtracker/internal/server"
-	"memtracker/internal/server/db"
-	"memtracker/internal/server/db/journal"
 	"memtracker/internal/server/handlers/api"
 	"os"
 	"os/signal"
@@ -18,15 +16,7 @@ func main() {
 	config.Exec()
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if config.DefaultDBURL == "" {
-	}
-
-	handler := &api.DefaultHandler{
-		DB: db.DB{
-			Storage:   db.MemStorageDB(),
-			Journaler: journal.NewJournal(),
-		},
-	}
+	handler := api.NewHandler()
 	server := server.NewMetricServer(handler, ctx)
 	handler.DB.Start()
 
