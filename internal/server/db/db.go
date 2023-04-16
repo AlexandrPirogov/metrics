@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"log"
+
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel"
 	"memtracker/internal/kernel/tuples"
@@ -12,8 +13,13 @@ import (
 	"sync"
 )
 
+type MetricsStorer interface {
+	Write(tuple tuples.Tupler) (tuples.Tupler, error)
+	Read(condition tuples.Tupler) ([]tuples.Tupler, error)
+}
+
 type DB struct {
-	Storage   *pidb.MemStorage
+	Storage   MetricsStorer
 	Journaler journal.Journal
 }
 
