@@ -67,9 +67,15 @@ func (d *DB) restore(bytes [][]byte) {
 		}
 		tuple := metric.ToTuple()
 		d.Journaler.Restored[metric.ID] = tuple
+		log.Printf("Restore %v", d.Journaler.Restored[metric.ID])
 	}
 
 	for _, tuple := range d.Journaler.Restored {
-		kernel.Write(d.Storage, tuple)
+		//this increased handle time x2
+		// TODO refactor
+		res, err := kernel.Read(d.Storage, tuple)
+		if len(res) == 0 || err != nil {
+			kernel.Write(d.Storage, tuple)
+		}
 	}
 }
