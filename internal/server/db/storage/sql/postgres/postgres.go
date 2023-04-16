@@ -220,7 +220,7 @@ func connection() *pgx.Conn {
 }
 
 func Migrate(c *pgx.Conn) {
-	path := "./../../internal/server/db/storage/sql/postgres/init.sql"
+	path := "internal/server/db/storage/sql/postgres/init.sql"
 	body, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Printf("Error while read%v", err)
