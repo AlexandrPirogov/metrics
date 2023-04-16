@@ -80,6 +80,6 @@ func (p *MemStorage) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
 			res = append(res, toAppend)
 			return res, nil
 		}
-		return []tuples.Tupler{}, errors.New("not found")
+		return []tuples.Tupler{}, nil
 	}
 }
