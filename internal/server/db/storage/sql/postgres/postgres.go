@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel/tuples"
@@ -214,5 +215,20 @@ func connection() *pgx.Conn {
 		log.Printf("conn err :%v", err)
 		return nil
 	}
+	Migrate(conn)
 	return conn
+}
+
+func Migrate(c *pgx.Conn) {
+	path := "./../../internal/server/db/storage/sql/postgres/init.sql"
+	body, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Printf("Error while read%v", err)
+	}
+
+	sql := string(body)
+	_, err = c.Exec(context.Background(), sql)
+	if err != nil {
+		log.Printf("Error while migrate%v", err)
+	}
 }
