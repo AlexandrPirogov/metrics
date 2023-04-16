@@ -22,6 +22,7 @@ func NewHandler() *DefaultHandler {
 	if server.ServerCfg.DBUrl != "" {
 		err := postgres.Ping()
 		if err == nil {
+			log.Printf("Using postgres as DB")
 			return &DefaultHandler{
 				DB: db.DB{
 					Storage:   postgres.NewPg(),
@@ -29,9 +30,11 @@ func NewHandler() *DefaultHandler {
 				},
 			}
 		}
+		log.Printf("err %v", err)
 
 	}
 
+	log.Printf("Using local ram as DB")
 	return &DefaultHandler{
 		DB: db.DB{
 			Storage:   db.MemStorageDB(),

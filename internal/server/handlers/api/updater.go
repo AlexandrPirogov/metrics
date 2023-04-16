@@ -52,6 +52,7 @@ func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, i
 	tuple := metric.ToTuple()
 	res, err := kernel.Write(d.DB.Storage, tuple)
 	if err != nil {
+		log.Printf("err while write counter %v", err)
 		return []byte{}, http.StatusBadRequest
 	}
 
@@ -84,7 +85,7 @@ func (d *DefaultHandler) processUpdateGauge(metric metrics.Metrics) ([]byte, int
 
 	res, err := kernel.Write(d.DB.Storage, tuple)
 	if err != nil {
-		return []byte{}, http.StatusBadGateway
+		return []byte{}, http.StatusBadRequest
 	}
 
 	m := metrics.ConvertToMetric(res)
