@@ -151,9 +151,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 //
 // Post-cond: correct metrics saved on server
 func (d *DefaultHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("db url %v", server.ServerCfg)
 	err := postgres.Ping()
-	log.Printf("ping err %v", err)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
