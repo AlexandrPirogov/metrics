@@ -7,6 +7,7 @@ import (
 	"memtracker/internal/config/server"
 	"memtracker/internal/crypt"
 	"memtracker/internal/kernel"
+	"memtracker/internal/kernel/tuples"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
 )
@@ -50,13 +51,13 @@ func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, i
 	}
 
 	tuple := metric.ToTuple()
-	res, err := kernel.Write(d.DB.Storage, tuple)
+	res, err := kernel.Write(d.DB.Storage, []tuples.Tupler{tuple})
 	if err != nil {
 		log.Printf("err while write counter %v", err)
 		return []byte{}, http.StatusBadRequest
 	}
 
-	m := metrics.ConvertToMetric(res)
+	m := metrics.ConvertToMetric(res[0])
 	body, _ := json.Marshal(m)
 	log.Printf("wrote %s", body)
 	go func() { d.DB.Journaler.Write(body) }()
@@ -83,12 +84,12 @@ func (d *DefaultHandler) processUpdateGauge(metric metrics.Metrics) ([]byte, int
 
 	tuple := metric.ToTuple()
 
-	res, err := kernel.Write(d.DB.Storage, tuple)
+	res, err := kernel.Write(d.DB.Storage, []tuples.Tupler{tuple})
 	if err != nil {
 		return []byte{}, http.StatusBadRequest
 	}
 
-	m := metrics.ConvertToMetric(res)
+	m := metrics.ConvertToMetric(res[0])
 
 	body, _ := json.Marshal(m)
 	go func() { d.DB.Journaler.Write(body) }()

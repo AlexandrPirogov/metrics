@@ -135,7 +135,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = kernel.Write(d.DB.Storage, metricState)
+	_, err = kernel.Write(d.DB.Storage, []tuples.Tupler{metricState})
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
