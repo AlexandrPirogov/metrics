@@ -11,7 +11,7 @@ type Replicator interface {
 }
 
 type Storer interface {
-	Write(tuple tuples.Tupler) (tuples.Tupler, error)
+	Write(tuple []tuples.Tupler) ([]tuples.Tupler, error)
 	Read(cond tuples.Tupler) ([]tuples.Tupler, error)
 }
 
@@ -21,13 +21,13 @@ type Storer interface {
 //
 // Post-cond: if was written successfully returns NewTuple state and error nil
 // Otherwise returns emtyTuple and error
-func Write(s Storer, state tuples.Tupler) (tuples.Tupler, error) {
-	newState, err := s.Write(state)
+func Write(s Storer, states []tuples.Tupler) ([]tuples.Tupler, error) {
+	newStates, err := s.Write(states)
 	if err != nil {
 		return nil, err
 	}
 
-	return newState, nil
+	return newStates, nil
 }
 
 func Read(s Storer, state tuples.Tupler) ([]tuples.Tupler, error) {
