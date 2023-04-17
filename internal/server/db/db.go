@@ -14,7 +14,7 @@ import (
 )
 
 type MetricsStorer interface {
-	Write(tuple tuples.Tupler) (tuples.Tupler, error)
+	Write(tuples []tuples.Tupler) ([]tuples.Tupler, error)
 	Read(condition tuples.Tupler) ([]tuples.Tupler, error)
 }
 
@@ -75,7 +75,7 @@ func (d *DB) restore(bytes [][]byte) {
 		// TODO refactor
 		res, err := kernel.Read(d.Storage, tuple)
 		if len(res) == 0 || err != nil {
-			kernel.Write(d.Storage, tuple)
+			kernel.Write(d.Storage, []tuples.Tupler{tuple})
 		}
 	}
 }

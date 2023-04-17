@@ -29,7 +29,7 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 	}
 
 	val := float64(1.1111111)
-	var gauge = tuples.Tuple{
+	var expected = tuples.Tuple{
 		Fields: map[string]interface{}{
 			"name":  "qwe",
 			"type":  "gauge",
@@ -37,10 +37,10 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 		},
 	}
 
-	newTuple, err := db.Write(gauge)
+	actual, err := db.Write([]tuples.Tupler{expected})
 
 	assert.Nil(t, err)
-	assert.EqualValues(t, gauge, newTuple)
+	assert.EqualValues(t, expected, actual[0])
 }
 
 // Test for saving incorrect gauges metrics
@@ -76,7 +76,7 @@ func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 	for _, sut := range suts {
 		t.Run("sut", func(t *testing.T) {
 
-			actual, err := db.Write(sut)
+			actual, err := db.Write([]tuples.Tupler{sut})
 
 			assert.NotNil(t, err)
 			assert.NotEqual(t, sut, actual)
@@ -119,13 +119,15 @@ func TestWriteCounterMetrics(t *testing.T) {
 	expected := 0
 	for _, sut := range suts {
 		expected++
-		actual, err := kernel.Write(&db, sut)
+		actuals, err := kernel.Write(&db, []tuples.Tupler{sut})
 
-		actualVal, ok := actual.GetField("value")
-		actualV := actualVal.(*int64)
-		assert.Nil(t, err)
-		assert.True(t, ok)
-		assert.EqualValues(t, expected, *actualV)
+		for _, actual := range actuals {
+			actualVal, ok := actual.GetField("value")
+			actualV := actualVal.(*int64)
+			assert.Nil(t, err)
+			assert.True(t, ok)
+			assert.EqualValues(t, expected, *actualV)
+		}
 	}
 
 }
@@ -164,7 +166,7 @@ func TestWriteIncorrectCountersMetrics(t *testing.T) {
 	for _, sut := range suts {
 		t.Run("sut", func(t *testing.T) {
 
-			_, err := db.Write(sut)
+			_, err := db.Write([]tuples.Tupler{sut})
 
 			assert.NotNil(t, err)
 			//	assert.NotEqual(t, sut, actual)

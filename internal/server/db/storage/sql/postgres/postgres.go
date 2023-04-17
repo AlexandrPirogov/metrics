@@ -30,29 +30,32 @@ type Postgres struct {
 // Post-cond: depends on sucsess
 // If success then state was written to database and returned written tuple and error = nil
 // Otherwise returns nil and error
-func (p *Postgres) Write(state tuples.Tupler) (tuples.Tupler, error) {
-	mname := tuples.ExtractString("name", state)
-	mtype := tuples.ExtractString("type", state)
+func (p *Postgres) Write(states []tuples.Tupler) ([]tuples.Tupler, error) {
+	resStates := make([]tuples.Tupler, 0)
+	for _, state := range states {
 
-	switch mtype {
-	case "gauge":
-		val := tuples.ExtractFloat64Pointer("value", state)
-		res, err := p.WriteGauges(mname, val)
-		if err != nil {
-			return nil, err
+		mname := tuples.ExtractString("name", state)
+		mtype := tuples.ExtractString("type", state)
+
+		switch mtype {
+		case "gauge":
+			val := tuples.ExtractFloat64Pointer("value", state)
+			res, err := p.WriteGauges(mname, val)
+			if err != nil {
+				return nil, err
+			}
+			resStates = append(resStates, res...)
+		case "counter":
+			val := tuples.ExtractInt64Pointer("value", state)
+			res, err := p.WriteCounteres(mname, val)
+			if err != nil {
+				log.Printf("err counter %V", err)
+				return nil, err
+			}
+			resStates = append(resStates, res...)
 		}
-		return res[0], nil
-	case "counter":
-		val := tuples.ExtractInt64Pointer("value", state)
-		res, err := p.WriteCounteres(mname, val)
-		if err != nil {
-			log.Printf("err counter %V", err)
-			return nil, err
-		}
-		return res[0], nil
-	default:
-		return state, nil
 	}
+	return resStates, nil
 }
 
 // Read reads tuples from database by given query

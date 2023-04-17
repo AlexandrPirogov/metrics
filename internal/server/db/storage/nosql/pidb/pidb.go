@@ -22,26 +22,31 @@ type MemStorage struct {
 // Post-cond: depends on sucsess
 // If success then state was written to database and returned written tuple and error = nil
 // Otherwise returns nil and error
-func (p *MemStorage) Write(state tuples.Tupler) (tuples.Tupler, error) {
+func (p *MemStorage) Write(states []tuples.Tupler) ([]tuples.Tupler, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
-	mtype := tuples.ExtractString("type", state)
-	mname := tuples.ExtractString("name", state)
+	result := []tuples.Tupler{}
+	for _, state := range states {
 
-	if metrics.IsMetricCorrect(mtype, mname) != nil {
-		errMsg := fmt.Sprintf("given not existing metric %s %s\n", mtype, mname)
-		return nil, errors.New(errMsg)
+		mtype := tuples.ExtractString("type", state)
+		mname := tuples.ExtractString("name", state)
+
+		if metrics.IsMetricCorrect(mtype, mname) != nil {
+			errMsg := fmt.Sprintf("given not existing metric %s %s\n", mtype, mname)
+			return nil, errors.New(errMsg)
+		}
+
+		current := p.Metrics[mtype][mname]
+		newState, err := state.Aggregate(current)
+
+		if err != nil {
+			return nil, err
+		}
+
+		p.Metrics[mtype][mname] = newState
+		result = append(result, newState)
 	}
-
-	current := p.Metrics[mtype][mname]
-	newState, err := state.Aggregate(current)
-
-	if err != nil {
-		return nil, err
-	}
-
-	p.Metrics[mtype][mname] = newState
-	return newState, nil
+	return result, nil
 }
 
 // Read reads tuples from database by given query
