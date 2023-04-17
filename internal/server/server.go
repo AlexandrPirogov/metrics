@@ -19,6 +19,7 @@ type MetricsHandler interface {
 
 	RetrieveMetricJSON(w http.ResponseWriter, r *http.Request)
 	UpdateHandlerJSON(w http.ResponseWriter, r *http.Request)
+	UpdatesHandlerJSON(w http.ResponseWriter, r *http.Request)
 }
 
 func NewMetricServer(h MetricsHandler, ctx context.Context) *http.Server {
@@ -38,6 +39,7 @@ func NewMetricServer(h MetricsHandler, ctx context.Context) *http.Server {
 		r.Use(middleware.AllowContentType("application/json"))
 		r.Post("/update/", h.UpdateHandlerJSON)
 		r.Post("/value/", h.RetrieveMetricJSON)
+		r.Post("/updates/", h.UpdatesHandlerJSON)
 	})
 	r.Get("/ping", h.PingHandler)
 	return &http.Server{
