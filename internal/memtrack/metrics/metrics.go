@@ -74,6 +74,15 @@ func ConvertToMetric(t tuples.Tupler) tuples.Tupler {
 	}
 }
 
+func ConvertToMetrics(m []Metrics) ([]tuples.Tupler, error) {
+	res := make([]tuples.Tupler, 0)
+	for _, metric := range m {
+		tupl := metric.ToTuple()
+		res = append(res, tupl)
+	}
+	return res, nil
+}
+
 func (m Metrics) MarshalJSON() ([]byte, error) {
 	type MetricStrAlias Metrics
 	type MetricAlias Metrics
