@@ -47,7 +47,11 @@ func (d *DefaultHandler) UpdateHandlerJSON(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 	var metric metrics.Metrics
 	body, _ := io.ReadAll(r.Body)
-	err := json.Unmarshal(body, &metric)
+
+	if err := json.Unmarshal(body, &metric); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	if metric.MType != "gauge" && metric.MType != "counter" {
 		w.WriteHeader(http.StatusNotImplemented)
@@ -86,7 +90,11 @@ func (d *DefaultHandler) UpdatesHandlerJSON(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	var metricsSlice []metrics.Metrics
 	body, _ := io.ReadAll(r.Body)
-	err := json.Unmarshal(body, &metricsSlice)
+
+	if err := json.Unmarshal(body, &metricsSlice); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	if err := d.verifyHash(metricsSlice); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
