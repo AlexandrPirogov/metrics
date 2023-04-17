@@ -67,7 +67,6 @@ func (d *DB) restore(bytes [][]byte) {
 		}
 		tuple := metric.ToTuple()
 		d.Journaler.Restored[metric.ID] = tuple
-		log.Printf("Restore %v", d.Journaler.Restored[metric.ID])
 	}
 
 	for _, tuple := range d.Journaler.Restored {
