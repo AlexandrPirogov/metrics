@@ -32,6 +32,7 @@ func (d *DefaultHandler) RetrieveMetricJSON(w http.ResponseWriter, r *http.Reque
 
 	metricState := metric.ToTuple()
 	body, status := d.processRetrieve(metricState)
+	log.Printf("status %d, body: %s", status, body)
 	w.WriteHeader(status)
 	if len(body) > 0 {
 		w.Write(body)
