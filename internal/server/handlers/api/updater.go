@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"memtracker/internal/config/server"
@@ -50,4 +51,13 @@ func (d *DefaultHandler) crypt(tupleList tuples.TupleList) tuples.TupleList {
 		tupleList = tupleList.Tail()
 	}
 	return res
+}
+
+func (d *DefaultHandler) replicate(tupleList tuples.TupleList) {
+	for tupleList.Next() {
+		h := tupleList.Head()
+		record, _ := json.Marshal(h)
+		d.DB.Journaler.Write(record)
+		tupleList = tupleList.Tail()
+	}
 }
