@@ -42,17 +42,17 @@ func (t TupleList) Merge(toMerge TupleList) TupleList {
 	return t
 }
 
-func MarshalTupleList(tail TupleList, acc []byte) []byte {
-	if !tail.Next() {
-		return acc
-	}
-	head, tail := tail.HeadTail()
-	bytes, _ := json.Marshal(head)
-	return append(bytes, MarshalTupleList(tail, acc)...)
+func (t TupleList) AsSlice() []Tupler {
+	return t.tuples
 }
 
-func Iterate(list TupleList, fun interface{}) {
-	if !list.Next() {
-
+func MarshalTupleList(tail TupleList, acc []byte) []byte {
+	slice := tail.AsSlice()
+	if len(slice) == 1 {
+		body, _ := json.Marshal(slice[0])
+		return body
 	}
+
+	body, _ := json.Marshal(slice)
+	return body
 }

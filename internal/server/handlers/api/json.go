@@ -114,6 +114,7 @@ func (d *DefaultHandler) UpdatesHandlerJSON(w http.ResponseWriter, r *http.Reque
 
 	body = tuples.MarshalTupleList(newStates, []byte{})
 
+	log.Printf("update response:%s", body)
 	w.WriteHeader(http.StatusOK)
 	if len(body) > 0 {
 		w.Write(body)
