@@ -21,13 +21,14 @@ func (d *DefaultHandler) processRetrieve(m tuples.Tupler) ([]byte, int) {
 		return []byte{}, http.StatusBadRequest
 	}
 
-	if !tupleList.Next() {
+	if tupleList.Len() == 0 {
 		log.Printf("not found:%v", m)
 		return []byte{}, http.StatusNotFound
 	}
 	if server.ServerCfg.Hash != "" {
 		tupleList = d.crypt(tupleList)
 	}
+
 	body := tuples.MarshalTupleList(tupleList, []byte{})
 	return body, http.StatusOK
 }
