@@ -22,44 +22,59 @@ type MemStorage struct {
 // Post-cond: depends on sucsess
 // If success then state was written to database and returned written tuple and error = nil
 // Otherwise returns nil and error
-func (p *MemStorage) Write(states []tuples.Tupler) ([]tuples.Tupler, error) {
+func (p *MemStorage) Write(states tuples.TupleList) (tuples.TupleList, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
-	result := []tuples.Tupler{}
-	for _, state := range states {
+	return p.writeRec(states, tuples.TupleList{})
+}
 
-		mtype := tuples.ExtractString("type", state)
-		mname := tuples.ExtractString("name", state)
-
-		if metrics.IsMetricCorrect(mtype, mname) != nil {
-			errMsg := fmt.Sprintf("given not existing metric %s %s\n", mtype, mname)
-			return nil, errors.New(errMsg)
-		}
-
-		current := p.Metrics[mtype][mname]
-		newState, err := state.Aggregate(current)
-
-		if err != nil {
-			return nil, err
-		}
-
-		p.Metrics[mtype][mname] = newState
-		result = append(result, newState)
+func (p *MemStorage) writeRec(tail tuples.TupleList, acc tuples.TupleList) (tuples.TupleList, error) {
+	if !tail.Next() {
+		return acc, nil
 	}
-	return result, nil
+
+	head, tail := tail.HeadTail()
+	written, err := p.writeState(head)
+	if err != nil {
+		return tuples.TupleList{}, err
+	}
+
+	return p.writeRec(tail, acc.Add(written))
+}
+
+func (p *MemStorage) writeState(state tuples.Tupler) (tuples.Tupler, error) {
+
+	mtype := tuples.ExtractString("type", state)
+	mname := tuples.ExtractString("name", state)
+
+	if metrics.IsMetricCorrect(mtype, mname) != nil {
+		errMsg := fmt.Sprintf("given not existing metric %s %s\n", mtype, mname)
+		return nil, errors.New(errMsg)
+	}
+
+	current := p.Metrics[mtype][mname]
+	newState, err := state.Aggregate(current)
+
+	if err != nil {
+		return nil, err
+	}
+
+	p.Metrics[mtype][mname] = newState
+
+	return newState, nil
 }
 
 // Read reads tuples from database by given query
 //
 // Pre-cond: given query tuple
 // Post-cond: return tuples that satisfies given query
-func (p *MemStorage) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
+func (p *MemStorage) Read(state tuples.Tupler) (tuples.TupleList, error) {
 	p.Mutex.Lock()
 	defer p.Mutex.Unlock()
 
 	mtype := tuples.ExtractString("type", state)
 	mname := tuples.ExtractString("name", state)
-	res := make([]tuples.Tupler, 0)
+	res := tuples.TupleList{}
 	// Here will be another refactor
 	switch mname {
 	case "*":
@@ -70,21 +85,21 @@ func (p *MemStorage) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
 			for _, ntype := range p.Metrics {
 				for _, metric := range ntype {
 					log.Printf("Len of db: %v", metric)
-					res = append(res, metric.ToTuple())
+					res = res.Add(metric.ToTuple())
 				}
 			}
 			return res, nil
 		default:
 			for _, metric := range p.Metrics[mtype] {
-				res = append(res, metric.ToTuple())
+				res = res.Add(metric.ToTuple())
 			}
 			return res, nil
 		}
 	default:
 		if toAppend, ok := p.Metrics[mtype][mname]; ok {
-			res = append(res, toAppend)
+			res = res.Add(toAppend.ToTuple())
 			return res, nil
 		}
-		return []tuples.Tupler{}, nil
+		return tuples.TupleList{}, nil
 	}
 }

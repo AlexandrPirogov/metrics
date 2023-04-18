@@ -14,8 +14,8 @@ import (
 )
 
 type MetricsStorer interface {
-	Write(tuples []tuples.Tupler) ([]tuples.Tupler, error)
-	Read(condition tuples.Tupler) ([]tuples.Tupler, error)
+	Write(tuples tuples.TupleList) (tuples.TupleList, error)
+	Read(condition tuples.Tupler) (tuples.TupleList, error)
 }
 
 type DB struct {
@@ -38,12 +38,9 @@ func MemStorageDB() *pidb.MemStorage {
 // Post-cond: db started and ready to work
 func (d *DB) Start() {
 	d.Journaler = journal.NewJournal()
-	bytes, err := d.Journaler.Restore()
-	if err == nil {
+	if bytes, err := d.Journaler.Restore(); err == nil {
 		log.Printf("restoring db...\n")
 		d.restore(bytes)
-	} else {
-		log.Printf("%v", err)
 	}
 
 	go func() {
@@ -73,8 +70,8 @@ func (d *DB) restore(bytes [][]byte) {
 		//this increased handle time x2
 		// TODO refactor
 		res, err := kernel.Read(d.Storage, tuple)
-		if len(res) == 0 || err != nil {
-			kernel.Write(d.Storage, []tuples.Tupler{tuple})
+		if !res.Next() || err != nil {
+			kernel.Write(d.Storage, tuples.TupleList{}.Add(tuple))
 		}
 	}
 }

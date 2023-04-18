@@ -30,39 +30,48 @@ type Postgres struct {
 // Post-cond: depends on sucsess
 // If success then state was written to database and returned written tuple and error = nil
 // Otherwise returns nil and error
-func (p *Postgres) Write(states []tuples.Tupler) ([]tuples.Tupler, error) {
-	resStates := make([]tuples.Tupler, 0)
-	for _, state := range states {
+func (p *Postgres) Write(states tuples.TupleList) (tuples.TupleList, error) {
+	return p.recWrite(states, tuples.TupleList{})
+}
 
-		mname := tuples.ExtractString("name", state)
-		mtype := tuples.ExtractString("type", state)
-
-		switch mtype {
-		case "gauge":
-			val := tuples.ExtractFloat64Pointer("value", state)
-			res, err := p.WriteGauges(mname, val)
-			if err != nil {
-				return nil, err
-			}
-			resStates = append(resStates, res...)
-		case "counter":
-			val := tuples.ExtractInt64Pointer("value", state)
-			res, err := p.WriteCounteres(mname, val)
-			if err != nil {
-				log.Printf("err counter %V", err)
-				return nil, err
-			}
-			resStates = append(resStates, res...)
-		}
+func (p *Postgres) recWrite(tail tuples.TupleList, acc tuples.TupleList) (tuples.TupleList, error) {
+	if !tail.Next() {
+		return acc, nil
 	}
-	return resStates, nil
+
+	head, tail := tail.HeadTail()
+	written, err := p.writeMetric(head)
+	if err != nil {
+		return tuples.TupleList{}, err
+	}
+	return p.recWrite(tail, acc.Merge(written))
+}
+
+func (p *Postgres) writeMetric(state tuples.Tupler) (tuples.TupleList, error) {
+	written := tuples.TupleList{}
+	mtype := tuples.ExtractString("type", state)
+	switch mtype {
+	case "gauge":
+		res, err := p.WriteGauges(state)
+		if err != nil {
+			return tuples.TupleList{}, err
+		}
+		written = written.Merge(res)
+	case "counter":
+		res, err := p.WriteCounters(state)
+		if err != nil {
+			return tuples.TupleList{}, err
+		}
+		written = written.Merge(res)
+	}
+	return written, nil
 }
 
 // Read reads tuples from database by given query
 //
 // Pre-cond: given query tuple
 // Post-cond: return tuples that satisfies given query
-func (p *Postgres) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
+func (p *Postgres) Read(state tuples.Tupler) (tuples.TupleList, error) {
 	mname := tuples.ExtractString("name", state)
 	mtype := tuples.ExtractString("type", state)
 
@@ -71,15 +80,15 @@ func (p *Postgres) Read(state tuples.Tupler) ([]tuples.Tupler, error) {
 		res, _ := p.ReadGauges(mname)
 		return res, nil
 	case "counter":
-		res, _ := p.ReadCounteres(mname)
+		res, _ := p.ReadCounters(mname)
 		return res, nil
 	case "*":
 		gauges, _ := p.ReadGauges(mname)
-		counters, nil := p.ReadCounteres(mname)
-		gauges = append(gauges, counters...)
+		counters, nil := p.ReadCounters(mname)
+		gauges = gauges.Merge(counters)
 		return gauges, nil
 	default:
-		return []tuples.Tupler{}, nil
+		return tuples.TupleList{}, nil
 	}
 }
 
@@ -96,116 +105,127 @@ func Ping() error {
 	return nil
 }
 
-func (p *Postgres) ReadGauges(cond string) ([]tuples.Tupler, error) {
+func (p *Postgres) ReadGauges(cond string) (tuples.TupleList, error) {
 	query := fmt.Sprintf("SELECT * from READ_METRIC('gauge', '%s')", cond)
 	rows, err := p.conn.Query(context.Background(), query)
 	if err != nil {
-		return nil, err
+		return tuples.TupleList{}, err
 	}
 
 	defer rows.Close()
 
-	var res = []tuples.Tupler{}
+	var res = tuples.TupleList{}
 	for rows.Next() {
 		var toScan metrics.GaugeState
 		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
 		if err != nil {
-			return nil, err
+			return tuples.TupleList{}, err
 		}
-		res = append(res, toScan)
+		res = res.Add(toScan)
 	}
 	return res, nil
 }
 
-func (p *Postgres) ReadCounteres(cond string) ([]tuples.Tupler, error) {
+func (p *Postgres) ReadCounters(cond string) (tuples.TupleList, error) {
 	query := fmt.Sprintf("SELECT * FROM READ_METRIC('counter', '%s')", cond)
 	rows, err := p.conn.Query(context.Background(), query)
 	if err != nil {
-		return nil, err
+		return tuples.TupleList{}, err
 	}
-
 	defer rows.Close()
 
-	var res = []tuples.Tupler{}
+	var res = tuples.TupleList{}
 
 	for rows.Next() {
 		var toScan metrics.CounterState
 		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
 		if err != nil {
-			return nil, err
+			return tuples.TupleList{}, err
 		}
-		res = append(res, toScan)
+		res = res.Add(toScan)
 	}
 	return res, nil
 }
 
-func (p *Postgres) ReadMetrics() ([]tuples.Tupler, error) {
+func (p *Postgres) ReadMetrics() (tuples.TupleList, error) {
 	query := "SELECT * FROM READ_METRICS()"
 	rows, err := p.conn.Query(context.Background(), query)
 	if err != nil {
-		return nil, err
+		return tuples.TupleList{}, err
 	}
 
 	defer rows.Close()
 
-	var res = []tuples.Tupler{}
+	var res = tuples.TupleList{}
 
 	for rows.Next() {
 		var toScan metrics.CounterState
 		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
 		if err != nil {
-			return nil, err
+			return tuples.TupleList{}, err
 		}
-		res = append(res, toScan)
+		res = res.Add(toScan)
 	}
 	return res, nil
 }
 
-func (p *Postgres) WriteGauges(cond string, val *float64) ([]tuples.Tupler, error) {
+func (p *Postgres) WriteGauges(state tuples.Tupler) (tuples.TupleList, error) {
+	val := tuples.ExtractFloat64Pointer("value", state)
 	if val == nil {
-		return nil, errors.New("value must exists while writing")
+		return tuples.TupleList{}, errors.New("value must exists while writing")
 	}
 
-	rows, err := p.conn.Query(context.Background(), "SELECT * FROM WRITE_METRIC('gauge'::varchar(255), $1::varchar(255), $2::double precision)", cond, *val)
+	mname := tuples.ExtractString("name", state)
+	mtype := tuples.ExtractString("type", state)
+	rows, err := p.conn.Query(context.Background(),
+		"SELECT * FROM WRITE_METRIC($1::varchar(255), $2::varchar(255), $3::double precision)", mtype, mname, *val)
 	if err != nil {
-		return nil, err
+		return tuples.TupleList{}, err
 	}
 
 	defer rows.Close()
 
-	var res = []tuples.Tupler{}
+	var res = tuples.TupleList{}
 	for rows.Next() {
 		var toScan metrics.GaugeState
 		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
 		if err != nil {
-			return nil, err
+			return tuples.TupleList{}, err
 		}
-		res = append(res, toScan)
+		res = res.Add(toScan)
 	}
 	return res, nil
 }
 
-func (p *Postgres) WriteCounteres(cond string, val *int64) ([]tuples.Tupler, error) {
+func (p *Postgres) WriteCounters(state tuples.Tupler) (tuples.TupleList, error) {
+
+	val := tuples.ExtractInt64Pointer("value", state)
 	if val == nil {
-		return nil, errors.New("value must exists while writing")
+		return tuples.TupleList{}, errors.New("value must exists while writing")
 	}
 
-	rows, err := p.conn.Query(context.Background(), "SELECT * FROM WRITE_METRIC('counter'::varchar(255), $1::varchar(255), $2::double precision)", cond, *val)
+	mname := tuples.ExtractString("name", state)
+	mtype := tuples.ExtractString("type", state)
+	log.Printf("writing counter\n")
+	rows, err := p.conn.Query(context.Background(),
+		"SELECT * FROM WRITE_METRIC($1::varchar(255), $2::varchar(255), $3::double precision)", mtype, mname, *val)
 	if err != nil {
-		return nil, err
+		log.Printf("err counter %v", err)
+		return tuples.TupleList{}, err
 	}
 
 	defer rows.Close()
 
-	var res = []tuples.Tupler{}
+	var res = tuples.TupleList{}
 
 	for rows.Next() {
 		var toScan metrics.CounterState
 		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
 		if err != nil {
-			return nil, err
+			log.Printf("error scan %v", err)
+			return tuples.TupleList{}, err
 		}
-		res = append(res, toScan)
+		res = res.Add(toScan)
 	}
 	return res, nil
 }
