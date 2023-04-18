@@ -13,23 +13,24 @@ type storeStub struct {
 	Tuples map[string]map[string]tuples.Tupler
 }
 
-func (s *storeStub) Write(tupls []tuples.Tupler) ([]tuples.Tupler, error) {
-	for _, t := range tupls {
-		mtype := tuples.ExtractString("type", t)
+func (s *storeStub) Write(tupls tuples.TupleList) (tuples.TupleList, error) {
+	for tupls.Next() {
+		head := tupls.Head()
+		mtype := tuples.ExtractString("type", head)
 		switch mtype {
 		case "gauge":
-			return []tuples.Tupler{t}, nil
+			return tuples.TupleList{}.Add(head), nil
 		case "counter":
-			return []tuples.Tupler{}, nil
+			return tuples.TupleList{}.Add(head), nil
 		default:
-			return []tuples.Tupler{}, errors.New("type not exists")
+			return tuples.TupleList{}, errors.New("type not exists")
 		}
 	}
-	return []tuples.Tupler{}, errors.New("type not exists")
+	return tuples.TupleList{}, errors.New("type not exists")
 }
 
-func (s *storeStub) Read(t tuples.Tupler) ([]tuples.Tupler, error) {
-	return []tuples.Tupler{tuples.NewTuple()}, nil
+func (s *storeStub) Read(t tuples.Tupler) (tuples.TupleList, error) {
+	return tuples.TupleList{}, nil
 }
 
 func NewStub() Storer {
@@ -39,15 +40,15 @@ func NewStub() Storer {
 
 func TestWriteGaugeTuple(t *testing.T) {
 	val := metrics.NumGC(123.123123123)
-	sut := []tuples.Tupler{
+	sut := tuples.TupleList{}.Add(
 		tuples.Tuple{
 			Fields: map[string]interface{}{
 				"name": "qwe",
 				"type": "gauge",
 				"val":  &val,
 			},
-		},
-	}
+		})
+
 	stub := &storeStub{
 		make(map[string]map[string]tuples.Tupler),
 	}
