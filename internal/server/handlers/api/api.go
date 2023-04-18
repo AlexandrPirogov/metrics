@@ -61,10 +61,11 @@ func (d *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request)
 	log.Printf("res afte read%v", res)
 	body := []byte{}
 
-	for _, tuple := range res {
-		b, _ := json.Marshal(tuple)
+	for res.Next() {
+		b, _ := json.Marshal(res.Head())
 		body = append(body, b...)
 	}
+
 	w.Write(body)
 
 }
@@ -84,18 +85,19 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 	query.SetField("type", mtype)
 	res, _ := kernel.Read(d.DB.Storage, query)
 
-	if len(res) == 0 {
+	if !res.Next() {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	for _, tuple := range res {
+	for res.Next() {
+		t := res.Head()
 		if mtype == "gauge" {
-			val, _ := tuple.GetField("value")
+			val, _ := t.GetField("value")
 			valStr := val.(*float64)
 			valB := strconv.FormatFloat(*valStr, 'f', -3, 64)
 			w.Write([]byte(valB))
 		} else {
-			val, _ := tuple.GetField("value")
+			val, _ := t.GetField("value")
 			valStr := val.(*int64)
 			valB := fmt.Sprintf("%d", *valStr)
 			w.Write([]byte(valB))
@@ -135,7 +137,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = kernel.Write(d.DB.Storage, []tuples.Tupler{metricState})
+	_, err = kernel.Write(d.DB.Storage, tuples.TupleList{}.Add(metricState))
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

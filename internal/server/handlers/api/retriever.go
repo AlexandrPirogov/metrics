@@ -5,7 +5,6 @@ import (
 	"log"
 	"memtracker/internal/kernel"
 	"memtracker/internal/kernel/tuples"
-	"memtracker/internal/memtrack/metrics"
 	"net/http"
 )
 
@@ -17,22 +16,17 @@ import (
 // otherwise returns empty bite slice and corresponging http status
 func (d *DefaultHandler) processRetrieve(m tuples.Tupler) ([]byte, int) {
 	query := m.ToTuple()
-	res, err := kernel.Read(d.DB.Storage, query)
+	tupleList, err := kernel.Read(d.DB.Storage, query)
 	if err != nil {
 		return []byte{}, http.StatusBadRequest
 	}
 
-	if len(res) == 0 {
+	if !tupleList.Next() {
 		log.Printf("not found:%v", m)
 		return []byte{}, http.StatusNotFound
 	}
 
-	body := []byte{}
-	for _, tuple := range res {
-		res := metrics.ConvertToMetric(tuple)
-		b, _ := json.Marshal(res)
-		body = append(body, b...)
-	}
+	body := tuples.MarshalTupleList(tupleList, []byte{})
 	return body, http.StatusOK
 }
 

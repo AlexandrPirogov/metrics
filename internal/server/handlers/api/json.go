@@ -57,29 +57,29 @@ func (d *DefaultHandler) UpdateHandlerJSON(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
+
 	states, err := metrics.ConvertToMetrics([]metrics.Metrics{metric})
 	if err != nil {
+		log.Printf("convert err %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err := d.verifyHash([]metrics.Metrics{metric}); err != nil {
+		log.Printf("hash err %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	newStates, err := d.processUpdate(states)
 	if err != nil {
+		log.Printf("update err %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	body, err = d.MarshalStates(newStates)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
+	body = tuples.MarshalTupleList(newStates, []byte{})
+	log.Printf("update response:%s", body)
 	w.WriteHeader(http.StatusOK)
 	if len(body) > 0 {
 		w.Write(body)
@@ -112,34 +112,12 @@ func (d *DefaultHandler) UpdatesHandlerJSON(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	body, err = d.MarshalStates(newStates)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	body = tuples.MarshalTupleList(newStates, []byte{})
 
 	w.WriteHeader(http.StatusOK)
 	if len(body) > 0 {
 		w.Write(body)
 	}
-}
-
-func (d *DefaultHandler) MarshalStates(states []tuples.Tupler) ([]byte, error) {
-	body := make([]byte, 0)
-	var err error
-	if len(states) == 1 {
-		body, err = json.Marshal(states[0])
-		if err != nil {
-			return []byte{}, err
-		}
-	} else {
-		body, err = json.Marshal(states)
-		if err != nil {
-			return []byte{}, err
-		}
-	}
-	go func() { d.DB.Journaler.Write(body) }()
-	return body, nil
 }
 
 func (d *DefaultHandler) verifyHash(metrcs []metrics.Metrics) error {
@@ -167,6 +145,7 @@ func (d *DefaultHandler) verifyCounterHash(m metrics.Metrics) error {
 	}
 
 	check := crypt.Hash(fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta), key)
+	log.Printf("check%s\n m.Hash: %s\n", check, m.Hash)
 	if m.Hash != check {
 		return errors.New("hash are not equals")
 	}
