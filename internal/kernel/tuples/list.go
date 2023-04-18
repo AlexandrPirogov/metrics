@@ -25,6 +25,10 @@ func (t TupleList) Next() bool {
 	return len(t.tuples) > 0
 }
 
+func (t TupleList) Len() int {
+	return len(t.tuples)
+}
+
 func (t TupleList) Add(elem Tupler) TupleList {
 	if t.tuples == nil {
 		t.tuples = make([]Tupler, 0)
