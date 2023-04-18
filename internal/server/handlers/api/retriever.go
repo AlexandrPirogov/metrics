@@ -1,8 +1,8 @@
 package api
 
 import (
-	"encoding/json"
 	"log"
+	"memtracker/internal/config/server"
 	"memtracker/internal/kernel"
 	"memtracker/internal/kernel/tuples"
 	"net/http"
@@ -25,24 +25,9 @@ func (d *DefaultHandler) processRetrieve(m tuples.Tupler) ([]byte, int) {
 		log.Printf("not found:%v", m)
 		return []byte{}, http.StatusNotFound
 	}
-
+	if server.ServerCfg.Hash != "" {
+		tupleList = d.crypt(tupleList)
+	}
 	body := tuples.MarshalTupleList(tupleList, []byte{})
 	return body, http.StatusOK
-}
-
-// marshalTuples marshal tuples in slice to slice of bytes
-//
-// Pre-cond: given slice of tuples
-//
-// Post-cond: return slice of bytes
-func (d *DefaultHandler) marshalTuples(tuples []tuples.Tupler) []byte {
-	body := []byte{}
-	for _, tuple := range tuples {
-		b, err := json.Marshal(tuple)
-		if err != nil {
-			continue
-		}
-		body = append(body, b...)
-	}
-	return body
 }
