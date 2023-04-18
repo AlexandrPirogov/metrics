@@ -27,9 +27,9 @@ type Client struct {
 }
 
 func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]interface{}) {
-	log.Printf("sending to host: %s", c.Host)
 	toMarshal := c.BuildCounters(metric, mapMetrics)
 	url := "http://" + c.Host + "/updates/"
+	log.Printf("sending to host: %s", url)
 
 	js, err := json.Marshal(toMarshal)
 	if err != nil {
@@ -39,7 +39,8 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 
 	buffer := bytes.NewBuffer(js)
 	request, _ := http.NewRequest(http.MethodPost, url, buffer)
-	request.Header.Add("Content-Encoding", "gzip")
+	request.Header.Add("Accept-Encoding", "gzip")
+	request.Header.Add("Content-Type", "application/json")
 	resp, err := c.Client.Do(request)
 	if err != nil {
 		log.Print(err)
@@ -57,6 +58,7 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 func (c Client) SendGauges(metric metrics.Metricable, mapMetrics map[string]interface{}) {
 	toMarshal := c.BuildGauges(metric, mapMetrics)
 	url := "http://" + c.Host + "/updates/"
+	log.Printf("sending to host: %s", url)
 
 	js, err := json.Marshal(toMarshal)
 	if err != nil {
@@ -65,9 +67,9 @@ func (c Client) SendGauges(metric metrics.Metricable, mapMetrics map[string]inte
 	}
 
 	buffer := bytes.NewBuffer(js)
-	log.Printf("sending to host: %s", buffer)
 	request, _ := http.NewRequest(http.MethodPost, url, buffer)
-	request.Header.Add("Content-Encoding", "gzip")
+	request.Header.Add("Accept-Encoding", "gzip")
+	request.Header.Add("Content-Type", "application/json")
 	resp, err := c.Client.Do(request)
 	if err != nil {
 		log.Print(err)
