@@ -64,6 +64,7 @@ func (d *DefaultHandler) RetrieveMetrics(w http.ResponseWriter, r *http.Request)
 	for res.Next() {
 		b, _ := json.Marshal(res.Head())
 		body = append(body, b...)
+		res = res.Tail()
 	}
 
 	w.Write(body)
@@ -102,6 +103,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 			valB := fmt.Sprintf("%d", *valStr)
 			w.Write([]byte(valB))
 		}
+		res = res.Tail()
 	}
 
 }
