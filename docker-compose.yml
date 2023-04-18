@@ -1,0 +1,19 @@
+version: '3.0'
+
+services:
+  db:
+    image: 'postgres:15.2'
+    container_name: 'pg_metrics'
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - "pg_metrics:/var/lib/postgresql/data"
+    environment:
+      - "PGDATA=/var/lib/postgresql/data/pgdata"
+      - "POSTGRES_PASSWORD=${POSTGRES_PWD}"
+      - "POSTGRES_USER=${POSTGRES_USER}"
+
+# Predefined volumes
+volumes:
+  # Volume for postgres
+  pg_metrics:
