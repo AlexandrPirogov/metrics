@@ -75,7 +75,7 @@ func (p *MemStorage) Read(state tuples.Tupler) (tuples.TupleList, error) {
 	mtype := tuples.ExtractString("type", state)
 	mname := tuples.ExtractString("name", state)
 	res := tuples.TupleList{}
-	// Here will be another refactor
+	// #TODO and To Mentor: Here will be another refactor later :)
 	switch mname {
 	case "*":
 		// ReadAlllTypes

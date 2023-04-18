@@ -243,6 +243,7 @@ func connection() *pgx.Conn {
 }
 
 func Migrate(c *pgx.Conn) {
+	// #TODO it must be const
 	path := "internal/server/db/storage/sql/postgres/init.sql"
 	body, err := os.ReadFile(path)
 	if err != nil {
