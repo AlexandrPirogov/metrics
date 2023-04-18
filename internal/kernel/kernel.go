@@ -3,6 +3,7 @@
 package kernel
 
 import (
+	"log"
 	"memtracker/internal/kernel/tuples"
 )
 
@@ -23,7 +24,9 @@ type Storer interface {
 // Otherwise returns emtyTuple and error
 func Write(s Storer, states tuples.TupleList) (tuples.TupleList, error) {
 	newStates, err := s.Write(states)
+
 	if err != nil {
+		log.Printf("err while writing state %v", err)
 		return tuples.TupleList{}, err
 	}
 
@@ -33,6 +36,7 @@ func Write(s Storer, states tuples.TupleList) (tuples.TupleList, error) {
 func Read(s Storer, state tuples.Tupler) (tuples.TupleList, error) {
 	states, err := s.Read(state)
 	if err != nil {
+		log.Printf("err while reading state %v", err)
 		return tuples.TupleList{}, err
 	}
 
