@@ -96,6 +96,8 @@ func (c CounterState) SetField(key string, value interface{}) tuples.Tupler {
 		c.Type = value.(string)
 	case "value":
 		c.Value = value.(*int64)
+	case "hash":
+		c.Hash = value.(string)
 	default:
 		log.Fatalf("given not existing field %s for counter state!", key)
 	}
@@ -118,6 +120,8 @@ func (c CounterState) GetField(key string) (interface{}, bool) {
 			return nil, false
 		}
 		return c.Value, true
+	case "hash":
+		return c.Hash, true
 	default:
 		return "", false
 	}
@@ -184,6 +188,8 @@ func (g GaugeState) SetField(key string, value interface{}) tuples.Tupler {
 		g.Type = value.(string)
 	case "value":
 		g.Value = value.(*float64)
+	case "hash":
+		g.Hash = value.(string)
 	default:
 		log.Fatalf("given not existing field %s for gauge state!", key)
 	}
@@ -206,6 +212,8 @@ func (g GaugeState) GetField(key string) (interface{}, bool) {
 			return nil, false
 		}
 		return g.Value, true
+	case "hash":
+		return g.Hash, true
 	default:
 		return "", false
 	}

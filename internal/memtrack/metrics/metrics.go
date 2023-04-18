@@ -10,6 +10,7 @@ package metrics
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"memtracker/internal/kernel/tuples"
 	"strconv"
@@ -74,11 +75,11 @@ func ConvertToMetric(t tuples.Tupler) tuples.Tupler {
 	}
 }
 
-func ConvertToMetrics(m []Metrics) ([]tuples.Tupler, error) {
-	res := make([]tuples.Tupler, 0)
+func ConvertToMetrics(m []Metrics) (tuples.TupleList, error) {
+	res := tuples.TupleList{}
 	for _, metric := range m {
 		tupl := metric.ToTuple()
-		res = append(res, tupl)
+		res = res.Add(tupl)
 	}
 	return res, nil
 }
@@ -164,7 +165,7 @@ type Metricable interface {
 // Post-cond: return nil if metric is correct, otherwise returns error
 func IsMetricCorrect(mtype, name string) error {
 	if name == "" {
-		return fmt.Errorf("name must be not empty")
+		return errors.New("name must be not empty")
 	}
 	var metrics = []Metricable{
 		&MemStats{},
@@ -175,7 +176,7 @@ func IsMetricCorrect(mtype, name string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("incorrect metric")
+	return errors.New("incorrect metric")
 }
 
 // checkFields checks if given type and name exists in given metric
