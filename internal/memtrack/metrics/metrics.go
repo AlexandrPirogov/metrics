@@ -86,7 +86,12 @@ func ConvertToMetrics(m []Metrics) (tuples.TupleList, error) {
 
 func (m Metrics) MarshalJSON() ([]byte, error) {
 	type MetricStrAlias Metrics
-	type MetricAlias Metrics
+	type AliasMetric struct {
+		MetricStrAlias
+		Delta string `json:"sdelta,omitempty"`
+		Value string `json:"svalue,omitempty"`
+	}
+
 	del := "none"
 	if m.Delta != nil {
 		del = fmt.Sprintf("%d", *m.Delta)
@@ -97,23 +102,13 @@ func (m Metrics) MarshalJSON() ([]byte, error) {
 		val = fmt.Sprintf("%.20f", *m.Value)
 	}
 
-	mAlias := struct {
-		MetricStrAlias
-		Delta string `json:"sdelta,omitempty"`
-		Value string `json:"svalue,omitempty"`
-	}{
+	mAlias := AliasMetric{
 		MetricStrAlias: (MetricStrAlias)(m),
 		Delta:          del,
 		Value:          val,
 	}
 
-	alias := struct {
-		ID    string   `json:"id"`              //Metric name
-		MType string   `json:"type"`            // Metric type: gauge or counter
-		Delta *int64   `json:"delta,omitempty"` //Metric's val if passing counter
-		Value *float64 `json:"value,omitempty"` //Metric's val if passing gauge
-		Hash  string   `json:"hash,omitempty"`  //Metric's val if passing gauge
-	}{
+	alias := MetricStrAlias{
 		ID:    mAlias.ID,
 		MType: m.MType,
 		Hash:  m.Hash,
