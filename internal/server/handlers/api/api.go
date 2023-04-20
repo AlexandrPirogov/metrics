@@ -20,12 +20,13 @@ import (
 
 func NewHandler() *DefaultHandler {
 	if server.ServerCfg.DBUrl != "" {
-		err := postgres.Ping()
+		pg := postgres.NewPg()
+		err := kernel.Ping(pg)
 		if err == nil {
 			log.Printf("Using postgres as DB")
 			return &DefaultHandler{
 				DB: db.DB{
-					Storage:   postgres.NewPg(),
+					Storage:   pg,
 					Journaler: journal.NewJournal(),
 				},
 			}
@@ -155,7 +156,7 @@ func (d *DefaultHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 //
 // Post-cond: correct metrics saved on server
 func (d *DefaultHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
-	err := postgres.Ping()
+	err := kernel.Ping(d.DB.Storage)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
