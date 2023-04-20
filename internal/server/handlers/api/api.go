@@ -21,18 +21,13 @@ import (
 func NewHandler() *DefaultHandler {
 	if server.ServerCfg.DBUrl != "" {
 		pg := postgres.NewPg()
-		err := kernel.Ping(pg)
-		if err == nil {
-			log.Printf("Using postgres as DB")
-			return &DefaultHandler{
-				DB: db.DB{
-					Storage:   pg,
-					Journaler: journal.NewJournal(),
-				},
-			}
+		log.Printf("Using postgres as DB")
+		return &DefaultHandler{
+			DB: db.DB{
+				Storage:   pg,
+				Journaler: journal.NewJournal(),
+			},
 		}
-		log.Printf("err %v", err)
-
 	}
 
 	log.Printf("Using local ram as DB")
