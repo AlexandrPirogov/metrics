@@ -16,6 +16,7 @@ import (
 type MetricsStorer interface {
 	Write(tuples tuples.TupleList) (tuples.TupleList, error)
 	Read(condition tuples.Tupler) (tuples.TupleList, error)
+	Ping() error
 }
 
 type DB struct {
