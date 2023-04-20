@@ -92,13 +92,12 @@ func (p *Postgres) Read(state tuples.Tupler) (tuples.TupleList, error) {
 	}
 }
 
-func Ping() error {
-	conn := connection()
-	if conn == nil {
+func (p *Postgres) Ping() error {
+	if p.conn == nil {
 		return errors.New("connection is nil")
 	}
-	defer conn.Close(context.Background())
-	err := conn.Ping(context.Background())
+
+	err := p.conn.Ping(context.Background())
 	if err != nil {
 		return err
 	}
