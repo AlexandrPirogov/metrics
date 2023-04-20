@@ -103,3 +103,7 @@ func (p *MemStorage) Read(state tuples.Tupler) (tuples.TupleList, error) {
 		return tuples.TupleList{}, nil
 	}
 }
+
+func (p *MemStorage) Ping() error {
+	return nil
+}
