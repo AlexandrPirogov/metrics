@@ -33,6 +33,10 @@ func (s *storeStub) Read(t tuples.Tupler) (tuples.TupleList, error) {
 	return tuples.TupleList{}, nil
 }
 
+func (s *storeStub) Ping() error {
+	return nil
+}
+
 func NewStub() Storer {
 	s := &storeStub{}
 	return s

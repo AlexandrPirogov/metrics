@@ -14,6 +14,7 @@ type Replicator interface {
 type Storer interface {
 	Write(tuple tuples.TupleList) (tuples.TupleList, error)
 	Read(cond tuples.Tupler) (tuples.TupleList, error)
+	Ping() error
 }
 
 // Write writes tupler to DB and return written state
@@ -41,4 +42,14 @@ func Read(s Storer, state tuples.Tupler) (tuples.TupleList, error) {
 	}
 
 	return states, nil
+}
+
+// Ping checks is Storer is alive. Health check.
+//
+// Pre-cond: given Stoerer
+//
+// Post-cond: makes HealthCheck for given Storer.
+// If alive -- return nil, otherwise returns error
+func Ping(s Storer) error {
+	return s.Ping()
 }
