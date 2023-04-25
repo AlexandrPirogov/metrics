@@ -13,10 +13,13 @@ import (
 )
 
 func NewClient(host, contentType string) Client {
+	wrksCnt := agent.ClientCfg.Limit
 	return Client{
 		Host:        host,
 		ContentType: contentType,
 		Client:      http.Client{},
+		workers:     wrksCnt,
+		channel:     make(chan metrics.Metricable, wrksCnt),
 	}
 }
 
@@ -24,6 +27,36 @@ type Client struct {
 	Host        string
 	ContentType string
 	http.Client
+	workers int
+	channel chan metrics.Metricable
+}
+
+func (c Client) Send(metrics []metrics.Metricable) {
+	for _, metric := range metrics {
+		c.channel <- metric
+	}
+}
+
+func (c Client) Listen() {
+	for i := 0; i < c.workers; i++ {
+		go c.work()
+	}
+}
+
+func (c Client) work() {
+	for {
+		m, ok := <-c.channel
+		if !ok {
+			return
+		}
+
+		switch {
+		case m.String() == "counter":
+			c.SendCounter(m, m.AsMap())
+		case m.String() == "gauge":
+			c.SendGauges(m, m.AsMap())
+		}
+	}
 }
 
 func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]interface{}) {
