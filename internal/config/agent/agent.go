@@ -25,6 +25,7 @@ var (
 	reportInterval string // how often agent will sends metrics to server
 	pollInterval   string // how often agent will updates metrics
 	hash           string //hash for metric
+	limit          int    //rate limit for agent to send requests
 )
 
 // Configs
@@ -37,6 +38,7 @@ type ClientConfig struct {
 	ReportInterval Interval `env:"REPORT_INTERVAL" envDefault:"10s"`
 	PollInterval   Interval `env:"POLL_INTERVAL" envDefault:"2s"`
 	Hash           string   `env:"KEY"`
+	Limit          int      `env:"RATE_LIMIT" envDefault:"1"`
 }
 
 func Exec() {
@@ -57,6 +59,7 @@ func initFlags() {
 	rootClientCmd.PersistentFlags().StringVarP(&reportInterval, "report", "r", "", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
 	rootClientCmd.PersistentFlags().StringVarP(&pollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
 	rootClientCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to server")
+	rootClientCmd.PersistentFlags().IntVarP(&limit, "limit", "l", 1, "rps limit to send requests")
 
 	if err := rootClientCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
@@ -68,4 +71,9 @@ func initFlags() {
 	if hash != "" {
 		ClientCfg.Hash = hash
 	}
+
+	if limit != 1 {
+		ClientCfg.Limit = limit
+	}
+
 }
