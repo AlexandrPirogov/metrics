@@ -34,6 +34,7 @@ type httpMemTracker struct {
 //
 // WARNING: Race condition appears
 func (h httpMemTracker) ReadAndSend() {
+	// TODO add here job queue
 	readTicker := time.NewTicker(time.Second * time.Duration(h.PollInterval))
 	sendTicker := time.NewTicker(time.Second * time.Duration(h.ReportInterval))
 	for {
@@ -48,14 +49,8 @@ func (h httpMemTracker) ReadAndSend() {
 
 // Sends metrics to given host
 func (h httpMemTracker) send() {
-	for _, metric := range h.MetricsContainer.Metrics {
-		mapMetrics := metric.AsMap()
-		if metric.String() == "gauge" {
-			h.client.SendGauges(metric, mapMetrics)
-		} else {
-			h.client.SendCounter(metric, mapMetrics)
-		}
-	}
+	// #TODO add here worker pool
+	h.client.Send(h.MetricsContainer.Metrics)
 }
 
 // updates values of tracking metrics
