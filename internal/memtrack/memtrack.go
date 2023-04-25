@@ -40,9 +40,9 @@ func (h httpMemTracker) ReadAndSend() {
 	for {
 		select {
 		case <-readTicker.C:
-			h.update()
+			go h.update()
 		case <-sendTicker.C:
-			h.send()
+			go h.send()
 		}
 	}
 }
@@ -75,11 +75,14 @@ func NewHTTPMemTracker() httpMemTracker {
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+
+	client := client.NewClient(cfg.Address, "application/json")
+	go client.Listen()
 	return httpMemTracker{
 		Host:           cfg.Address,
 		PollInterval:   poll,
 		ReportInterval: report,
 		memtracker:     memtracker{trackers.New()},
-		client:         client.NewClient(cfg.Address, "application/json"),
+		client:         client,
 	}
 }
