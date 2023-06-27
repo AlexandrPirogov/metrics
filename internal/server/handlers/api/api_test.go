@@ -1,14 +1,5 @@
 package api_test
 
-import (
-	"bytes"
-	"encoding/json"
-	"io"
-	"log"
-	"memtracker/internal/memtrack/metrics"
-	"net/http"
-)
-
 //Doesn't pass static check, says ExampleDefaultHandler_RetrieveMetrics refers to unknown identifier: DefaultHandler
 /*
 func ExampleDefaultHandler_RetrieveMetrics() {
