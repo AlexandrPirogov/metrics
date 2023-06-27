@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func ExampleDefaultHandler_RetrieveMetrics() {
+func ExampleRetrieveMetrics() {
 	// Setting params for request
 	url := "http://" + "your host" + "/value/"
 	request, _ := http.NewRequest(http.MethodPost, url, nil)
