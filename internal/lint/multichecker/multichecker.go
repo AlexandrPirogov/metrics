@@ -146,9 +146,7 @@ func New() []*analysis.Analyzer {
 
 	// Running golang.org/x/tools/go/analysis/passes default packages
 
-	for _, v := range DefaultRules {
-		StaticCheckRules = append(StaticCheckRules, v)
-	}
+	StaticCheckRules = append(StaticCheckRules, DefaultRules...)
 
 	StaticCheckRules = append(StaticCheckRules, OsExitCheckAnalyzer)
 	log.Printf("Static rules: %d\n", len(StaticCheckRules))
