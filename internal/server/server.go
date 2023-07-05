@@ -1,3 +1,4 @@
+// Package server provides an API for the http.server instance
 package server
 
 import (

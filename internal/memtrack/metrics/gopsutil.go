@@ -1,3 +1,4 @@
+// Package metrics contains all metrics type to collect
 package metrics
 
 import (

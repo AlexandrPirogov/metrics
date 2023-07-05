@@ -1,3 +1,4 @@
+// Package crypt contains functions for Hash
 package crypt
 
 import (
@@ -6,6 +7,7 @@ import (
 	"fmt"
 )
 
+// Hash hashes given string with given key
 func Hash(toHash, key string) string {
 	if key == "" {
 		return ""

@@ -1,3 +1,4 @@
+// Package client provides an http Client to send metrics for server
 package client
 
 import (
