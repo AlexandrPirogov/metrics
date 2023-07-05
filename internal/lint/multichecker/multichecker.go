@@ -1,3 +1,7 @@
+// Package multichecker contains bunch of static lint default checkers
+// for SA and ST rules with custom chec
+//
+// To run multichecker build the source code and specify the dir/file you want to check :)
 package multichecker
 
 import (
