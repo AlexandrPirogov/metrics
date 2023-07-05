@@ -158,24 +158,30 @@ func New() []*analysis.Analyzer {
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
-			if c, ok := n.(*ast.FuncDecl); ok {
-				if c.Name.String() == "main" {
-					ast.Inspect(c, func(n1 ast.Node) bool {
-						if i, ok := n1.(*ast.CallExpr); ok {
-							if m, ok := i.Fun.(*ast.SelectorExpr); ok {
-								if m.Sel.Name == "Exit" {
-									pass.Reportf(i.Pos(), "os.Exit used inside main()")
-									return false
+			if p, ok := n.(*ast.Package); ok && p.Name == "main" {
+				ast.Inspect(file, func(n ast.Node) bool {
+					if c, ok := n.(*ast.FuncDecl); ok {
+						if c.Name.String() == "main" {
+							ast.Inspect(c, func(n1 ast.Node) bool {
+								if i, ok := n1.(*ast.CallExpr); ok {
+									if m, ok := i.Fun.(*ast.SelectorExpr); ok {
+										if m.Sel.Name == "Exit" {
+											pass.Reportf(i.Pos(), "os.Exit used inside main()")
+											return false
+										}
+									}
 								}
-							}
+								return true
+							})
 						}
-						return true
-					})
-				}
-			}
+					}
 
+					return true
+				})
+			}
 			return true
 		})
+
 	}
 	return nil, nil
 }
