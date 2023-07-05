@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"memtracker/internal/lint/osmain"
 	"regexp"
 
 	"golang.org/x/tools/go/analysis"
@@ -55,7 +56,10 @@ import (
 	"honnef.co/go/tools/stylecheck"
 )
 
+// Regexp for all SA rules
 const SAREGEXP = "^[SA]+[\\d]*"
+
+// Regexp for all ST rules
 const STREGEXP = "^[ST]+[\\d]*"
 
 func main() {
@@ -66,7 +70,7 @@ func main() {
 	for _, v := range staticcheck.Analyzers {
 		if SACompiled.Match([]byte(v.Analyzer.Name)) {
 			StaticCheckRules = append(StaticCheckRules, v.Analyzer)
-			log.Printf("Rule %s was added\n", v.Analyzer.Name)
+			//log.Printf("Rule %s was added\n", v.Analyzer.Name)
 		}
 	}
 
@@ -74,7 +78,7 @@ func main() {
 	for _, v := range stylecheck.Analyzers {
 		if STCompiler.Match([]byte(v.Analyzer.Name)) {
 			StaticCheckRules = append(StaticCheckRules, v.Analyzer)
-			log.Printf("Rule %s was added\n", v.Analyzer.Name)
+			//	log.Printf("Rule %s was added\n", v.Analyzer.Name)
 		}
 	}
 
@@ -132,6 +136,7 @@ func main() {
 		StaticCheckRules = append(StaticCheckRules, v)
 	}
 
+	StaticCheckRules = append(StaticCheckRules, osmain.OsExitCheckAnalyzer)
 	log.Printf("Static rules: %d\n", len(StaticCheckRules))
 	multichecker.Main(StaticCheckRules...)
 }
