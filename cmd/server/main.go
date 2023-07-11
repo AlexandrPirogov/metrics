@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	config "memtracker/internal/config/server"
 	"memtracker/internal/server"
 	"memtracker/internal/server/db"
-	"memtracker/internal/server/handlers"
+	"memtracker/internal/server/db/journal"
+	"memtracker/internal/server/handlers/api"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,10 +15,16 @@ import (
 )
 
 func main() {
+	config.Exec()
 	ctx, cancel := context.WithCancel(context.Background())
 
-	handler := &handlers.DefaultHandler{DB: &db.DB{Storage: db.MemStoageDB()}}
-	server := server.NewMetricServer(":8080", handler, ctx)
+	handler := &api.DefaultHandler{DB: &db.DB{
+		Storage:   db.MemStoageDB(),
+		Journaler: journal.NewJournal(),
+	}}
+	server := server.NewMetricServer(handler, ctx)
+	handler.DB.Start()
+
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {
@@ -27,13 +35,9 @@ func main() {
 
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
-
+	log.Printf("started server on %s\n", server.Addr)
 	<-cancelChan
 	log.Printf("os.Interrupt-- shutting down...\n")
-	go func() {
-		<-cancelChan
-		log.Fatalf("os.Kill -- terminating...\n")
-	}()
 
 	ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancelShutdown()

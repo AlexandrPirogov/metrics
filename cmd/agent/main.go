@@ -2,23 +2,19 @@ package main
 
 import (
 	"log"
+	"memtracker/internal/config/agent"
 	"memtracker/internal/memtrack"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
-// Better use .env
-var host string = "localhost"
-var port string = ":8080"
-
 func main() {
+	agent.Exec()
 	go func() {
-		var client = http.Client{Timeout: time.Second / 2}
-		memtracker := memtrack.NewHTTPMemTracker(client, host+port)
-		memtracker.ReadAndSend(time.Second*2, time.Second*10)
+		memtracker := memtrack.NewHTTPMemTracker()
+		log.Printf("Started agent on %s, poll: %d, report: %d", memtracker.Host, memtracker.PollInterval, memtracker.ReportInterval)
+		memtracker.ReadAndSend()
 	}()
 
 	cancelChan := make(chan os.Signal, 1)
@@ -26,11 +22,7 @@ func main() {
 
 	<-cancelChan
 	log.Printf("os.Interrupt-- shutting down...\n")
-	//We don't need to clear http.Client and stop it properly like server
-	go func() {
-		<-cancelChan
-		log.Fatalf("os.Kill -- terminating...\n")
-	}()
+
 	defer os.Exit(0)
 	close(cancelChan)
 }

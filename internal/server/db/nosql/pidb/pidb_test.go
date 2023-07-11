@@ -1,7 +1,6 @@
 package pidb
 
 import (
-	"log"
 	"memtracker/internal/memtrack/metrics"
 	"testing"
 
@@ -15,28 +14,24 @@ import (
 func TestInit(t *testing.T) {
 	db := MemStorage{
 
-		Documents: initDB(),
+		Metrics: initDB(),
 	}
 
-	assert.Equal(t, len(db.Documents), 2, "New created MemStorage must be empty")
+	assert.Equal(t, len(db.Metrics), 2, "New created MemStorage must be empty")
 }
 
 // Test for saving correct gauges metrics
 func TestWriteCorrectGaugesMetrics(t *testing.T) {
 	db := MemStorage{
 
-		Documents: initDB(),
+		Metrics: initDB(),
 	}
 
 	var gauges = metrics.MemStats{}
 	metrics := gauges.AsMap()
 	for name := range metrics {
-		//	beforeInsert := len(db.Documents)
-		log.Printf("hehe--%s--%s--", name, gauges.String())
-		insertStatus := db.InsertMetric(gauges.String(), name, "0")
-		//	afterInsert := len(db.Documents)
-		assert.Equal(t, nil, insertStatus, "Can't insert correct gauge metric!\n")
-		//assert.Greater(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
+		_, err := db.InsertMetric(gauges.String(), name, "0")
+		assert.Equal(t, nil, err, "Can't insert correct gauge metric!\n")
 	}
 }
 
@@ -44,16 +39,16 @@ func TestWriteCorrectGaugesMetrics(t *testing.T) {
 func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 	db := MemStorage{
 
-		Documents: initDB(),
+		Metrics: initDB(),
 	}
 	var gauges = metrics.MemStats{}
 	metrics := gauges.AsMap()
 	for name := range metrics {
-		beforeInsert := len(db.Documents)
+		beforeInsert := len(db.Metrics)
 		modifiedType := " " + gauges.String() + " "
 		modifiedName := " " + name + " "
-		insertStatus := db.InsertMetric(modifiedType, modifiedName, "2")
-		afterInsert := len(db.Documents)
+		insertStatus, _ := db.InsertMetric(modifiedType, modifiedName, "2")
+		afterInsert := len(db.Metrics)
 		assert.NotEqual(t, nil, insertStatus, "Can't insert correcet gauge metric!\n")
 		assert.Equal(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
 	}
@@ -63,17 +58,14 @@ func TestWriteIncorrectGaugesMetrics(t *testing.T) {
 func TestWriteCounterMetrics(t *testing.T) {
 	db := MemStorage{
 
-		Documents: initDB(),
+		Metrics: initDB(),
 	}
 
 	var counters = metrics.Polls{}
 	metrics := counters.AsMap()
 	for name := range metrics {
-		//beforeInsert := len(db.Documents)
-		insertStatus := db.InsertMetric(counters.String(), name, "0")
-		//afterInsert := len(db.Documents)
-		assert.Equal(t, nil, insertStatus, "Can't insert correcet gauge metric!\n")
-		//assert.Greater(t, afterInsert, beforeInsert, "After failed insert db size should be not be modified!")
+		_, err := db.InsertMetric(counters.String(), name, "0")
+		assert.Equal(t, nil, err, "Can't insert correcet gauge metric!\n")
 	}
 }
 
@@ -81,24 +73,24 @@ func TestWriteCounterMetrics(t *testing.T) {
 func TestWriteIncorrectCountersMetrics(t *testing.T) {
 	db := MemStorage{
 
-		Documents: initDB(),
+		Metrics: initDB(),
 	}
 	var counters = metrics.Polls{}
 	metrics := counters.AsMap()
 	for name := range metrics {
-		beforeInsert := len(db.Documents)
+		beforeInsert := len(db.Metrics)
 		modifiedType := " " + counters.String() + " "
 		modifiedName := " " + name + " "
-		insertStatus := db.InsertMetric(modifiedType, modifiedName, "2")
-		afterInsert := len(db.Documents)
+		insertStatus, _ := db.InsertMetric(modifiedType, modifiedName, "2")
+		afterInsert := len(db.Metrics)
 		assert.NotEqual(t, 0, insertStatus, "Can't insert correcet gauge metric!\n")
 		assert.Equal(t, afterInsert, beforeInsert, "After success insert db size should be increased!")
 	}
 }
 
-func initDB() map[string]map[string]Document {
-	var imap = map[string]map[string]Document{}
-	imap["gauge"] = map[string]Document{}
-	imap["counter"] = map[string]Document{}
+func initDB() map[string]map[string][]byte {
+	var imap = map[string]map[string][]byte{}
+	imap["gauge"] = map[string][]byte{}
+	imap["counter"] = map[string][]byte{}
 	return imap
 }

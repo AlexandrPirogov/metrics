@@ -9,9 +9,82 @@
 package metrics
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+// Serializable representation of metric
+type Metrics struct {
+	ID    string   `json:"id"`              //Metric name
+	MType string   `json:"type"`            // Metric type: gauge or counter
+	Delta *int64   `json:"delta,omitempty"` //Metric's val if passing counter
+	Value *float64 `json:"value,omitempty"` //Metric's val if passing gauge
+}
+
+func (m Metrics) MarshalJSON() ([]byte, error) {
+	type MetricStrAlias Metrics
+	type MetricAlias Metrics
+	del := "none"
+	if m.Delta != nil {
+		del = fmt.Sprintf("%d", *m.Delta)
+	}
+
+	val := "none"
+	if m.Value != nil {
+		val = fmt.Sprintf("%.20f", *m.Value)
+	}
+
+	mAlias := struct {
+		MetricStrAlias
+		Delta string `json:"sdelta,omitempty"`
+		Value string `json:"svalue,omitempty"`
+	}{
+		MetricStrAlias: (MetricStrAlias)(m),
+		Delta:          del,
+		Value:          val,
+	}
+
+	alias := struct {
+		ID    string   `json:"id"`              //Metric name
+		MType string   `json:"type"`            // Metric type: gauge or counter
+		Delta *int64   `json:"delta,omitempty"` //Metric's val if passing counter
+		Value *float64 `json:"value,omitempty"` //Metric's val if passing gauge
+	}{
+		ID:    mAlias.ID,
+		MType: m.MType,
+	}
+
+	delta, err := strconv.ParseInt(mAlias.Delta, 10, 64)
+	if err != nil {
+		alias.Delta = nil
+	} else {
+		alias.Delta = &delta
+	}
+
+	Val, err := strconv.ParseFloat(mAlias.Value, 64)
+	if err != nil {
+		alias.Value = nil
+	} else {
+		alias.Value = &Val
+	}
+	return json.Marshal(alias)
+}
+
+func (m *Metrics) UnmarshalJSON(data []byte) error {
+	type MetricAlias Metrics
+	alias := struct {
+		*MetricAlias
+	}{
+		MetricAlias: (*MetricAlias)(m),
+	}
+
+	if err := json.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	return nil
+}
 
 // Metricalbes entities should update own metrics by Read() errpr method
 // Read returns nil if success otherwise error

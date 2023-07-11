@@ -3,10 +3,11 @@
 package memtrack
 
 import (
-	"fmt"
 	"log"
+	"memtracker/internal/config/agent"
+	"memtracker/internal/memtrack/http/client"
 	"memtracker/internal/memtrack/trackers"
-	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -18,9 +19,11 @@ type memtracker struct {
 
 // Read metrics and send it to given with given http.Client
 type httpMemTracker struct {
-	Host string
+	Host           string
+	PollInterval   int
+	ReportInterval int
+	client         client.Client
 	memtracker
-	client http.Client
 }
 
 // ReadAndSend Starts to read metrics
@@ -30,9 +33,9 @@ type httpMemTracker struct {
 // sendInterval -- how often send metrics to server
 //
 // WARNING: Race condition appears
-func (h httpMemTracker) ReadAndSend(readInterval time.Duration, sendInterval time.Duration) {
-	readTicker := time.NewTicker(readInterval)
-	sendTicker := time.NewTicker(sendInterval)
+func (h httpMemTracker) ReadAndSend() {
+	readTicker := time.NewTicker(time.Second * time.Duration(h.PollInterval))
+	sendTicker := time.NewTicker(time.Second * time.Duration(h.ReportInterval))
 	for {
 		//TODO: fix race condition. Read about mutexes in Go
 		select {
@@ -47,19 +50,15 @@ func (h httpMemTracker) ReadAndSend(readInterval time.Duration, sendInterval tim
 // Sends metrics to given host
 func (h httpMemTracker) send() {
 	for _, metric := range h.MetricsContainer.Metrics {
-		metrics := metric.AsMap()
-		for k, v := range metrics {
-			url := "http://" + h.Host + "/update/" + fmt.Sprintf("%v/%v/%v", metric, k, v)
-			log.Printf("Sending metrics to: %s\n", url)
-			resp, err := h.client.Post(url, "text/plain", nil)
-
-			if err != nil {
-				log.Print(err)
-			}
-			defer resp.Body.Close()
+		mapMetrics := metric.AsMap()
+		if metric.String() == "gauge" {
+			log.Printf("Sending gauges\n")
+			h.client.SendGauges(metric, mapMetrics)
+		} else {
+			log.Printf("counters gauges\n")
+			h.client.SendCounter(metric, mapMetrics)
 		}
 	}
-
 }
 
 // updates values of tracking metrics
@@ -72,9 +71,23 @@ func (h httpMemTracker) update() {
 // Pre-cond: Given client instance and host = addr:port
 //
 // Post-cond: returns new instance of httpMemTracker
-func NewHTTPMemTracker(client http.Client, host string) httpMemTracker {
+func NewHTTPMemTracker() httpMemTracker {
+	cfg := agent.ClientCfg
+	pollInterval := cfg.PollInterval[:len(cfg.PollInterval)-1]
+	poll, err := strconv.Atoi(string(pollInterval))
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	reportInterval := cfg.ReportInterval[:len(cfg.ReportInterval)-1]
+	report, err := strconv.Atoi(string(reportInterval))
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 	return httpMemTracker{
-		Host:       host,
-		memtracker: memtracker{trackers.New()},
-		client:     client}
+		Host:           cfg.Address,
+		PollInterval:   poll,
+		ReportInterval: report,
+		memtracker:     memtracker{trackers.New()},
+		client:         client.NewClient(cfg.Address, "application/json"),
+	}
 }
