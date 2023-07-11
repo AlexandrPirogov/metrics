@@ -34,28 +34,23 @@ type httpMemTracker struct {
 //
 // WARNING: Race condition appears
 func (h httpMemTracker) ReadAndSend() {
+	// TODO add here job queue
 	readTicker := time.NewTicker(time.Second * time.Duration(h.PollInterval))
 	sendTicker := time.NewTicker(time.Second * time.Duration(h.ReportInterval))
 	for {
 		select {
 		case <-readTicker.C:
-			h.update()
+			go h.update()
 		case <-sendTicker.C:
-			h.send()
+			go h.send()
 		}
 	}
 }
 
 // Sends metrics to given host
 func (h httpMemTracker) send() {
-	for _, metric := range h.MetricsContainer.Metrics {
-		mapMetrics := metric.AsMap()
-		if metric.String() == "gauge" {
-			h.client.SendGauges(metric, mapMetrics)
-		} else {
-			h.client.SendCounter(metric, mapMetrics)
-		}
-	}
+	// #TODO add here worker pool
+	h.client.Send(h.MetricsContainer.Metrics)
 }
 
 // updates values of tracking metrics
@@ -80,11 +75,14 @@ func NewHTTPMemTracker() httpMemTracker {
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+
+	client := client.NewClient(cfg.Address, "application/json")
+	go client.Listen()
 	return httpMemTracker{
 		Host:           cfg.Address,
 		PollInterval:   poll,
 		ReportInterval: report,
 		memtracker:     memtracker{trackers.New()},
-		client:         client.NewClient(cfg.Address, "application/json"),
+		client:         client,
 	}
 }
