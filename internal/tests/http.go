@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//TODO ??? move that to better place
-
 // Asserts that two values are equals
 func AssertEqualValues(t *testing.T, expected interface{}, actual interface{}) {
 	if !assert.EqualValues(t, expected, actual, "Two values must be equals") {

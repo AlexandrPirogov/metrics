@@ -1,9 +1,14 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"memtracker/internal/config/server"
+	"memtracker/internal/crypt"
+	"memtracker/internal/kernel"
+	"memtracker/internal/kernel/tuples"
 	"memtracker/internal/memtrack/metrics"
-	"net/http"
 )
 
 // processUpdate updates metric value depends on metric's type
@@ -13,46 +18,46 @@ import (
 // Post-cond: return result or processing metric.
 // If success, returns slice of bytes and http status = 200
 // otherwise returns empty bite slice and corresponging http status
-func (d *DefaultHandler) processUpdate(metric metrics.Metrics) ([]byte, int) {
-	switch {
-	case metric.MType == "gauge":
-		return d.processUpdateGauge(metric)
-	case metric.MType == "counter":
-		return d.processUpdateCounter(metric)
-	default:
-		return []byte{}, http.StatusNotImplemented
+func (d *DefaultHandler) processUpdate(tupleList tuples.TupleList) (tuples.TupleList, error) {
+	res, err := kernel.Write(d.DB.Storage, tupleList)
+	if err != nil {
+		log.Printf("err while write counter %v", err)
+		return tuples.TupleList{}, err
 	}
+
+	if server.ServerCfg.Hash != "" {
+		res = d.crypt(res)
+	}
+	return res, nil
 }
 
-// processUpdateCounter updates counter metric
-//
-// Pre-cond: given counter metric
-//
-// Post-cond: return result or processing counter  metric.
-// If success, returns slice of bytes and http status = 200
-// otherwise returns empty bite slice and corresponging http status
-func (d *DefaultHandler) processUpdateCounter(metric metrics.Metrics) ([]byte, int) {
-	if metric.Delta == nil || metric.Value != nil {
-		return []byte{}, http.StatusBadRequest
+func (d *DefaultHandler) crypt(tupleList tuples.TupleList) tuples.TupleList {
+	res := tuples.TupleList{}
+	for tupleList.Next() {
+		h := tupleList.Head()
+		name := tuples.ExtractString("name", h)
+		switch h.(type) {
+		case metrics.CounterState:
+			val := tuples.ExtractInt64Pointer("value", h)
+			counterHash := crypt.Hash(fmt.Sprintf("%s:counter:%d", name, *val), server.ServerCfg.Hash)
+			h = h.SetField("hash", counterHash)
+		case metrics.GaugeState:
+			val := tuples.ExtractFloat64Pointer("value", h)
+			gaugeHash := crypt.Hash(fmt.Sprintf("%s:gauge:%f", name, *val), server.ServerCfg.Hash)
+			h = h.SetField("hash", gaugeHash)
+			log.Printf("gauge hash: %s", tuples.ExtractString("hash", h))
+		}
+		res = res.Add(h)
+		tupleList = tupleList.Tail()
 	}
-
-	d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%d", *metric.Delta))
-	body, _ := d.DB.ReadByParams(metric.MType, metric.ID)
-	return body, http.StatusOK
+	return res
 }
 
-// processUpdateCounter updates update metric
-//
-// Pre-cond: given update metric
-//
-// Post-cond: return result or processing update  metric.
-// If success, returns slice of bytes and http status = 200
-// otherwise returns empty bite slice and corresponging http status
-func (d *DefaultHandler) processUpdateGauge(metric metrics.Metrics) ([]byte, int) {
-	if metric.Value == nil || metric.Delta != nil {
-		return []byte{}, http.StatusBadRequest
+func (d *DefaultHandler) replicate(tupleList tuples.TupleList) {
+	for tupleList.Next() {
+		h := tupleList.Head()
+		record, _ := json.Marshal(h)
+		d.DB.Journaler.Write(record)
+		tupleList = tupleList.Tail()
 	}
-
-	body, _ := d.DB.Write(metric.MType, metric.ID, fmt.Sprintf("%.11f", *metric.Value))
-	return body, http.StatusOK
 }

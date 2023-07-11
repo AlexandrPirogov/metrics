@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"memtracker/internal/config/server"
-	"memtracker/internal/server/handlers/api"
 	"memtracker/internal/server/middlewares"
 	"net"
 	"net/http"
@@ -12,7 +11,18 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewMetricServer(h api.MetricsHandler, ctx context.Context) *http.Server {
+type MetricsHandler interface {
+	RetrieveMetrics(w http.ResponseWriter, r *http.Request)
+	RetrieveMetric(w http.ResponseWriter, r *http.Request)
+	UpdateHandler(w http.ResponseWriter, r *http.Request)
+	PingHandler(w http.ResponseWriter, r *http.Request)
+
+	RetrieveMetricJSON(w http.ResponseWriter, r *http.Request)
+	UpdateHandlerJSON(w http.ResponseWriter, r *http.Request)
+	UpdatesHandlerJSON(w http.ResponseWriter, r *http.Request)
+}
+
+func NewMetricServer(h MetricsHandler, ctx context.Context) *http.Server {
 	cfg := server.ServerCfg
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -29,8 +39,9 @@ func NewMetricServer(h api.MetricsHandler, ctx context.Context) *http.Server {
 		r.Use(middleware.AllowContentType("application/json"))
 		r.Post("/update/", h.UpdateHandlerJSON)
 		r.Post("/value/", h.RetrieveMetricJSON)
+		r.Post("/updates/", h.UpdatesHandlerJSON)
 	})
-
+	r.Get("/ping", h.PingHandler)
 	return &http.Server{
 		Addr:        cfg.Address,
 		Handler:     r,

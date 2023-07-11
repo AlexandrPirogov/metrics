@@ -10,7 +10,9 @@ package metrics
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"memtracker/internal/kernel/tuples"
 	"strconv"
 	"strings"
 )
@@ -21,11 +23,75 @@ type Metrics struct {
 	MType string   `json:"type"`            // Metric type: gauge or counter
 	Delta *int64   `json:"delta,omitempty"` //Metric's val if passing counter
 	Value *float64 `json:"value,omitempty"` //Metric's val if passing gauge
+	Hash  string   `json:"hash,omitempty"`
+}
+
+func (m Metrics) ToTuple() tuples.Tupler {
+	var tuple tuples.Tupler
+	switch m.MType {
+	case "counter":
+		if m.Delta == nil {
+			tuple, _ = createCounterState(m.ID, m.MType, "")
+			return tuple
+		}
+		tuple, _ = createCounterState(m.ID, m.MType, fmt.Sprintf("%d", *m.Delta))
+	case "gauge":
+		if m.Value == nil {
+			tuple, _ = createCounterState(m.ID, m.MType, "")
+			return tuple
+		}
+		tuple, _ = createGaugeState(m.ID, m.MType, fmt.Sprintf("%.20f", *m.Value))
+	}
+
+	return tuple
+}
+
+func ConvertToMetric(t tuples.Tupler) tuples.Tupler {
+	mname := tuples.ExtractString("name", t)
+	mtype := tuples.ExtractString("type", t)
+	switch t.(type) {
+	case GaugeState:
+		val := tuples.ExtractFloat64Pointer("value", t)
+		if val == nil {
+			return nil
+		}
+		metr, err := CreateState(mname, mtype, fmt.Sprintf("%.20f", *val))
+		if err != nil {
+			return nil
+		}
+		return metr
+	case CounterState:
+		val := tuples.ExtractInt64Pointer("value", t)
+		if val == nil {
+			return nil
+		}
+		metr, err := CreateState(mname, mtype, fmt.Sprintf("%d", *val))
+		if err != nil {
+			return nil
+		}
+		return metr
+	default:
+		return nil
+	}
+}
+
+func ConvertToMetrics(m []Metrics) (tuples.TupleList, error) {
+	res := tuples.TupleList{}
+	for _, metric := range m {
+		tupl := metric.ToTuple()
+		res = res.Add(tupl)
+	}
+	return res, nil
 }
 
 func (m Metrics) MarshalJSON() ([]byte, error) {
 	type MetricStrAlias Metrics
-	type MetricAlias Metrics
+	type AliasMetric struct {
+		MetricStrAlias
+		Delta string `json:"sdelta,omitempty"`
+		Value string `json:"svalue,omitempty"`
+	}
+
 	del := "none"
 	if m.Delta != nil {
 		del = fmt.Sprintf("%d", *m.Delta)
@@ -36,24 +102,16 @@ func (m Metrics) MarshalJSON() ([]byte, error) {
 		val = fmt.Sprintf("%.20f", *m.Value)
 	}
 
-	mAlias := struct {
-		MetricStrAlias
-		Delta string `json:"sdelta,omitempty"`
-		Value string `json:"svalue,omitempty"`
-	}{
+	mAlias := AliasMetric{
 		MetricStrAlias: (MetricStrAlias)(m),
 		Delta:          del,
 		Value:          val,
 	}
 
-	alias := struct {
-		ID    string   `json:"id"`              //Metric name
-		MType string   `json:"type"`            // Metric type: gauge or counter
-		Delta *int64   `json:"delta,omitempty"` //Metric's val if passing counter
-		Value *float64 `json:"value,omitempty"` //Metric's val if passing gauge
-	}{
+	alias := MetricStrAlias{
 		ID:    mAlias.ID,
 		MType: m.MType,
+		Hash:  m.Hash,
 	}
 
 	delta, err := strconv.ParseInt(mAlias.Delta, 10, 64)
@@ -69,6 +127,7 @@ func (m Metrics) MarshalJSON() ([]byte, error) {
 	} else {
 		alias.Value = &Val
 	}
+
 	return json.Marshal(alias)
 }
 
@@ -100,6 +159,9 @@ type Metricable interface {
 //
 // Post-cond: return nil if metric is correct, otherwise returns error
 func IsMetricCorrect(mtype, name string) error {
+	if name == "" {
+		return errors.New("name must be not empty")
+	}
 	var metrics = []Metricable{
 		&MemStats{},
 		&Polls{},
@@ -109,7 +171,7 @@ func IsMetricCorrect(mtype, name string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("incorrect metric")
+	return errors.New("incorrect metric")
 }
 
 // checkFields checks if given type and name exists in given metric

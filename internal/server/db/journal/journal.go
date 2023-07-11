@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"errors"
 	"log"
+
 	"memtracker/internal/config/server"
+	"memtracker/internal/kernel/tuples"
 	"os"
 	"strconv"
 	"time"
@@ -22,6 +24,7 @@ func NewJournal() Journal {
 		File:         cfg.StoreFile,
 		WithRestore:  cfg.Restore,
 		ReadInterval: read,
+		Restored:     map[string]tuples.Tupler{},
 		Channel:      make(chan []byte),
 	}
 }
@@ -32,6 +35,7 @@ type Journal struct {
 	File         string
 	WithRestore  bool
 	ReadInterval int
+	Restored     map[string]tuples.Tupler
 	Channel      chan []byte
 }
 

@@ -1,7 +1,10 @@
 package api
 
 import (
-	"memtracker/internal/memtrack/metrics"
+	"log"
+	"memtracker/internal/config/server"
+	"memtracker/internal/kernel"
+	"memtracker/internal/kernel/tuples"
 	"net/http"
 )
 
@@ -11,51 +14,21 @@ import (
 //
 // Post-cond: If success, returns slice of bytes and http status = 200
 // otherwise returns empty bite slice and corresponging http status
-func (d *DefaultHandler) processRetrieve(metric metrics.Metrics) ([]byte, int) {
-	switch {
-	case metric.MType == "gauge":
-		return d.processRetrieveGauge(metric)
-	case metric.MType == "counter":
-		return d.processRetrieveCounter(metric)
-	default:
-		return []byte{}, http.StatusNotImplemented
-	}
-}
-
-// processRetrieve retrieve stored counter metric value
-//
-// Pre-cond: given counter metric
-//
-// Post-cond: If success, returns slice of bytes and http status = 200
-// otherwise returns empty bite slice and corresponging http status
-func (d *DefaultHandler) processRetrieveCounter(metric metrics.Metrics) ([]byte, int) {
-	if metric.Delta != nil {
+func (d *DefaultHandler) processRetrieve(m tuples.Tupler) ([]byte, int) {
+	query := m.ToTuple()
+	tupleList, err := kernel.Read(d.DB.Storage, query)
+	if err != nil {
 		return []byte{}, http.StatusBadRequest
 	}
 
-	res, err := d.DB.ReadByParams(metric.MType, metric.ID)
-	if err != nil {
+	if tupleList.Len() == 0 {
+		log.Printf("not found:%v", m)
 		return []byte{}, http.StatusNotFound
 	}
-
-	return res, http.StatusOK
-}
-
-// processRetrieve retrieve stored gauge metric value
-//
-// Pre-cond: given gauge metric
-//
-// Post-cond: If success, returns slice of bytes and http status = 200
-// otherwise returns empty bite slice and corresponging http status
-func (d *DefaultHandler) processRetrieveGauge(metric metrics.Metrics) ([]byte, int) {
-	if metric.Delta != nil {
-		return []byte{}, http.StatusBadRequest
+	if server.ServerCfg.Hash != "" {
+		tupleList = d.crypt(tupleList)
 	}
 
-	res, err := d.DB.ReadByParams(metric.MType, metric.ID)
-	if err != nil {
-		return []byte{}, http.StatusNotFound
-	}
-
-	return res, http.StatusOK
+	body := tuples.MarshalTupleList(tupleList, []byte{})
+	return body, http.StatusOK
 }

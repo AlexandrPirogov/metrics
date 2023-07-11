@@ -24,6 +24,7 @@ var (
 	address        string // agent & server addr
 	reportInterval string // how often agent will sends metrics to server
 	pollInterval   string // how often agent will updates metrics
+	hash           string //hash for metric
 )
 
 // Configs
@@ -35,6 +36,7 @@ type ClientConfig struct {
 	Address        string   `env:"ADDRESS" envDefault:"localhost:8080"`
 	ReportInterval Interval `env:"REPORT_INTERVAL" envDefault:"10s"`
 	PollInterval   Interval `env:"POLL_INTERVAL" envDefault:"2s"`
+	Hash           string   `env:"KEY"`
 }
 
 func Exec() {
@@ -54,11 +56,16 @@ func initFlags() {
 	rootClientCmd.PersistentFlags().StringVarP(&address, "address", "a", "", "ADDRESS OF AGNET. Default value: localhost:8080")
 	rootClientCmd.PersistentFlags().StringVarP(&reportInterval, "report", "r", "", "How ofter sends metrics to server. Examples: 0s, 10s, 100s")
 	rootClientCmd.PersistentFlags().StringVarP(&pollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
+	rootClientCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to server")
 
 	if err := rootClientCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
 	if address != "" {
 		ClientCfg.Address = address
+	}
+
+	if hash != "" {
+		ClientCfg.Hash = hash
 	}
 }
