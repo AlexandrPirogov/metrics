@@ -42,6 +42,7 @@ func NewMetricServer(h MetricsHandler, ctx context.Context) *http.Server {
 		r.Post("/updates/", h.UpdatesHandlerJSON)
 	})
 	r.Get("/ping", h.PingHandler)
+	r.Mount("/debug", middleware.Profiler())
 	return &http.Server{
 		Addr:        cfg.Address,
 		Handler:     r,

@@ -1,3 +1,4 @@
+// Package proved a ready enpoints for metric servce
 package api
 
 import (
