@@ -2,6 +2,7 @@ package server
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
@@ -16,6 +17,7 @@ const (
 	DefaultHost          = ""
 	DefaultHash          = ""
 	DefaultDBURL         = ""
+	DefaultCryptoKey     = ""
 	DefaultRestore       = true
 )
 
@@ -35,7 +37,7 @@ var (
 	restore       bool   // Should db be restored
 	storeInterval string // period of replication
 	storeFile     string // file where replication is goint to be written
-	hash          string //key for hashing
+	hash          string // key for hashing
 	dbURL         string // url connection for postgres
 )
 
@@ -46,9 +48,11 @@ var (
 )
 
 type ServerConfig struct {
-	Address string `env:"ADDRESS" envDefault:"localhost:8080"`
-	Hash    string `env:"KEY"`
-	DBUrl   string `env:"DATABASE_DSN"`
+	Address   string `env:"ADDRESS" envDefault:"localhost:8080"`
+	Hash      string `env:"KEY"`
+	DBUrl     string `env:"DATABASE_DSN"`
+	CryptoKey string `env:"CRYPTO_KEY"`
+	Run       func(serv *http.Server) error
 }
 
 type JournalConfig struct {
@@ -102,5 +106,17 @@ func initFlags() {
 
 	if ServerCfg.DBUrl == DefaultDBURL {
 		ServerCfg.DBUrl = dbURL
+	}
+
+	if ServerCfg.CryptoKey == DefaultCryptoKey {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running non tls server")
+			return serv.ListenAndServe()
+		}
+	} else {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running tls server")
+			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
+		}
 	}
 }
