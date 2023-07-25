@@ -110,11 +110,11 @@ func initFlags() {
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
-	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+	/*f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 	if address != DefaultHost {
 		ServerCfg.Address = address
 	}
-
+	*/
 	if hash != "" {
 		ServerCfg.Hash = hash
 	}

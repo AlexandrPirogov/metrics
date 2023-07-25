@@ -38,7 +38,7 @@ var (
 
 // Configs
 var (
-	ClientCfg = &ClientConfig{} // Config for agent
+	ClientCfg = ClientConfig{} // Config for agent
 )
 
 type ClientConfig struct {
@@ -79,7 +79,7 @@ func Exec() {
 }
 
 func initEnv() {
-	err := env.Parse(ClientCfg)
+	err := env.Parse(&ClientCfg)
 	f.ErrFatalCheck("error while read client env variables", err)
 }
 
@@ -98,8 +98,8 @@ func initFlags() {
 	f.CompareStringsDo(cfgFile, "", func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, "", func() { ClientCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ClientCfg.Hash = hash })
-	f.CompareIntsDo(limit, 1, func() { ClientCfg.Limit = limit })
 	f.CompareStringsDo(ClientCfg.CryptoKey, "", func() {})
+	f.CompareIntsDo(limit, 1, func() { ClientCfg.Limit = limit })
 	f.CompareStringsDoOthewise(cfgFile, "", assignTLS, assignNonTLS)
 }
 
