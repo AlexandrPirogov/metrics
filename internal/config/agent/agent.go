@@ -95,7 +95,7 @@ func initFlags() {
 	err := rootClientCmd.Execute()
 	f.ErrFatalCheck("", err)
 
-	//f.CompareStringsDo(cfgFile, "", func() { readConfigFile(cfgFile) })
+	f.CompareStringsDo(cfgFile, "", func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, "", func() { ClientCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ClientCfg.Hash = hash })
 	f.CompareIntsDo(limit, 1, func() { ClientCfg.Limit = limit })

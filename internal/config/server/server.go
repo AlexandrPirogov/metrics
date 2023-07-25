@@ -50,8 +50,8 @@ var (
 
 // Configs
 var (
-	ServerCfg  = &ServerConfig{}  // Config for server
-	JournalCfg = &JournalConfig{} //Config for replication
+	ServerCfg  = ServerConfig{}  // Config for server
+	JournalCfg = JournalConfig{} //Config for replication
 )
 
 type ServerConfig struct {
@@ -90,11 +90,11 @@ func Exec() {
 }
 
 func initEnv() {
-	if err := env.Parse(ServerCfg); err != nil {
+	if err := env.Parse(&ServerCfg); err != nil {
 		log.Fatalf("error while read server env variables %v", err)
 	}
 
-	if err := env.Parse(JournalCfg); err != nil {
+	if err := env.Parse(&JournalCfg); err != nil {
 		log.Fatalf("error while read journal env variables %v", err)
 	}
 }
@@ -110,15 +110,38 @@ func initFlags() {
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
+	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+	if address != DefaultHost {
+		ServerCfg.Address = address
+	}
 
-	//f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
-	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
-	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
-	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
-	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
-	f.CompareStringsDo(dbURL, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
-	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverNonTLSAssign, serverTLSAssign)
+	if hash != "" {
+		ServerCfg.Hash = hash
+	}
 
+	if storeInterval != DefaultStoreInterval {
+		JournalCfg.ReadInterval = storeInterval
+	}
+
+	if storeFile != DefaultFileStore {
+		JournalCfg.StoreFile = storeFile
+	}
+
+	if ServerCfg.DBUrl == DefaultDBURL {
+		ServerCfg.DBUrl = dbURL
+	}
+
+	if ServerCfg.CryptoKey == DefaultCryptoKey {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running non tls server")
+			return serv.ListenAndServe()
+		}
+	} else {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running tls server")
+			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
+		}
+	}
 }
 
 func readConfigFile(path string) {
