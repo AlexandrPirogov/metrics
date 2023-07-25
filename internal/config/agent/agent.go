@@ -85,33 +85,39 @@ func initFlags() {
 	if ClientCfg.CryptoKey == "" {
 		ClientCfg.TransportCfg = &http.Transport{}
 	} else {
+		certificates := []tls.Certificate{}
+		crt, err := certTemplate(ClientCfg.CryptoKey)
+		if err == nil {
+			certificates = append(certificates, crt)
+		}
 		ClientCfg.TransportCfg = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
-				Certificates: []tls.Certificate{
-					certTemplate(ClientCfg.CryptoKey),
-				},
+				Certificates:       certificates,
 			},
 		}
 	}
 
 }
 
-func certTemplate(clientKet string) tls.Certificate {
+func certTemplate(clientKet string) (tls.Certificate, error) {
 	crt, err := tls.LoadX509KeyPair("client.pem", "client.key")
 	if err != nil {
-		log.Fatalf("err while loading x509 key pair: %v", err)
+		log.Printf("err while loading x509 key pair: %v", err)
+		return crt, err
 	}
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
-		log.Fatalf("system certpool %v", err)
+		log.Printf("system certpool %v", err)
+		return crt, err
 	}
 	caCertPem, err := os.ReadFile("cert.pem")
 	if err != nil {
-		log.Fatalf("err while reading cert.pem %v", err)
+		log.Printf("err while reading cert.pem %v", err)
+		return crt, err
 	}
 	if ok := certPool.AppendCertsFromPEM(caCertPem); !ok {
-		log.Fatal("invalid cert in CA PEM")
+		log.Printf("invalid cert in CA PEM")
 	}
-	return crt
+	return crt, nil
 }
