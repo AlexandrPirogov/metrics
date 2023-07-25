@@ -44,7 +44,7 @@ var (
 )
 
 type ClientConfig struct {
-	Address        string   `env:"ADDRESS" envDefault:"localhost:8080" json:"address"`
+	Address        string   `env:"ADDRESS" envDefault:"http://localhost:8080" json:"address"`
 	ReportInterval Interval `env:"REPORT_INTERVAL" envDefault:"10s" json:"report_interval"`
 	PollInterval   Interval `env:"POLL_INTERVAL" envDefault:"2s" json:"poll_interval"`
 	Hash           string   `env:"KEY"`
@@ -94,7 +94,7 @@ func initFlags() {
 	f.ErrFatalCheck("", err)
 
 	f.CompareStringsDo(cfgFile, "", func() { readConfigFile(cfgFile) })
-	f.CompareStringsDo(address, "", func() { ClientCfg.Address = address })
+	f.CompareStringsDo(address, "", func() { ClientCfg.Address = "http://" + address })
 	f.CompareStringsDo(hash, "", func() { ClientCfg.Hash = hash })
 	f.CompareStringsDo(ClientCfg.CryptoKey, "", func() {})
 	f.CompareIntsDo(limit, 1, func() { ClientCfg.Limit = limit })
