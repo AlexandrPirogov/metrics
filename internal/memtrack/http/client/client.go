@@ -63,7 +63,7 @@ func (c Client) work() {
 
 func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]interface{}) {
 	toMarshal := c.BuildCounters(metric, mapMetrics)
-	url := "https://" + c.Host + "/updates/"
+	url := c.Host + "/updates/"
 	log.Printf("sending to host: %s", url)
 
 	js, err := json.Marshal(toMarshal)
@@ -92,7 +92,7 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 
 func (c Client) SendGauges(metric metrics.Metricable, mapMetrics map[string]interface{}) {
 	toMarshal := c.BuildGauges(metric, mapMetrics)
-	url := "https://" + c.Host + "/updates/"
+	url := c.Host + "/updates/"
 	log.Printf("sending to host: %s", url)
 
 	js, err := json.Marshal(toMarshal)
