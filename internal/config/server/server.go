@@ -111,7 +111,9 @@ func initFlags() {
 		log.Fatalf("%v", err)
 	}
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
-	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
+	if address != DefaultHost {
+		ServerCfg.Address = address
+	}
 
 	if hash != "" {
 		ServerCfg.Hash = hash
