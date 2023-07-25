@@ -8,6 +8,8 @@ import (
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
+
+	f "memtracker/internal/function"
 )
 
 type Interval string
@@ -66,9 +68,6 @@ type JournalConfig struct {
 	ReadInterval string `json:"store_interval" env:"STORE_INTERVAL" envDefault:"300s"`
 }
 
-// Helper function-values for applying
-type assignFunction func()
-
 var (
 	serverTLSAssign = func() {
 		ServerCfg.Run = func(serv *http.Server) error {
@@ -91,7 +90,7 @@ func Exec() {
 	err := rootServerCmd.Execute()
 	errFatalCheck("", err)
 
-	checkDefVal(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 
 	initEnv()
 	initFlags()
@@ -116,12 +115,12 @@ func initFlags() {
 	err := rootServerCmd.Execute()
 	errFatalCheck("flags error", err)
 
-	checkDefVal(address, DefaultHost, func() { ServerCfg.Address = address })
-	checkDefVal(hash, DefaultHash, func() { ServerCfg.Hash = hash })
-	checkDefVal(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
-	checkDefVal(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
-	checkDefVal(dbURL, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
-	checkDefValWithOpt(ServerCfg.CryptoKey, DefaultCryptoKey, serverNonTLSAssign, serverTLSAssign)
+	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
+	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
+	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
+	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
+	f.CompareStringsDo(dbURL, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
+	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverNonTLSAssign, serverTLSAssign)
 
 }
 
@@ -134,21 +133,6 @@ func readConfigFile(path string) {
 
 	err = json.Unmarshal(bytes, &JournalCfg)
 	errFatalCheck("err while reading config", err)
-}
-
-func checkDefVal(check string, defaulValue string, actionOnTrue assignFunction) {
-	if check != defaulValue {
-		actionOnTrue()
-	}
-}
-
-func checkDefValWithOpt(check string, defaulValue string, actionOnTrue assignFunction, actionOnFalse assignFunction) {
-	if check != defaulValue {
-		actionOnTrue()
-		return
-	}
-
-	actionOnFalse()
 }
 
 func errFatalCheck(msg string, err error) {
