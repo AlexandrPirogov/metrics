@@ -39,7 +39,7 @@ func main() {
 	}()
 
 	cancelChan := make(chan os.Signal, 1)
-	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGKILL)
+	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
 	log.Printf("started server on %s\n", server.Conf.Address)
 	sig := <-cancelChan
 	log.Printf("Got signal %v\n", sig)
