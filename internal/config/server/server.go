@@ -90,31 +90,58 @@ func Exec() {
 }
 
 func initEnv() {
-	err := env.Parse(&ServerCfg)
-	f.ErrFatalCheck("error while read server env variables", err)
+	if err := env.Parse(&ServerCfg); err != nil {
+		log.Fatalf("error while read server env variables %v", err)
+	}
 
-	err = env.Parse(&JournalCfg)
-	f.ErrFatalCheck("error while read journal env variables", err)
+	if err := env.Parse(&JournalCfg); err != nil {
+		log.Fatalf("error while read journal env variables %v", err)
+	}
 }
 
 func initFlags() {
-	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", "", "ADDRESS OF SERVER. Default value: localhost:8080")
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
+	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
 	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
 
-	err := rootServerCmd.Execute()
-	f.ErrFatalCheck("flags error", err)
+	if err := rootServerCmd.Execute(); err != nil {
+		log.Fatalf("%v", err)
+	}
+	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+	if address != DefaultHost {
+		ServerCfg.Address = address
+	}
 
-	//f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
-	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
-	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
-	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
-	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
-	f.CompareStringsDo(dbURL, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
-	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverNonTLSAssign, serverTLSAssign)
+	if hash != "" {
+		ServerCfg.Hash = hash
+	}
+
+	if storeInterval != DefaultStoreInterval {
+		JournalCfg.ReadInterval = storeInterval
+	}
+
+	if storeFile != DefaultFileStore {
+		JournalCfg.StoreFile = storeFile
+	}
+
+	if ServerCfg.DBUrl == DefaultDBURL {
+		ServerCfg.DBUrl = dbURL
+	}
+
+	if ServerCfg.CryptoKey == DefaultCryptoKey {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running non tls server")
+			return serv.ListenAndServe()
+		}
+	} else {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running tls server")
+			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
+		}
+	}
 }
 
 func readConfigFile(path string) {
