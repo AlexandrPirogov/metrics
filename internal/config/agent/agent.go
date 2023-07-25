@@ -3,9 +3,9 @@ package agent
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
@@ -106,7 +106,7 @@ func certTemplate(clientKet string) tls.Certificate {
 	if err != nil {
 		log.Fatalf("system certpool %v", err)
 	}
-	caCertPem, err := ioutil.ReadFile("cert.pem")
+	caCertPem, err := os.ReadFile("cert.pem")
 	if err != nil {
 		log.Fatalf("err while reading cert.pem %v", err)
 	}
