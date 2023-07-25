@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	f "memtracker/internal/function"
 	"net/http"
@@ -111,7 +110,7 @@ func certTemplate(clientKet string) (tls.Certificate, error) {
 	certPool, err := x509.SystemCertPool()
 	f.ErrFatalCheck("system certpool", err)
 
-	caCertPem, err := ioutil.ReadFile("client.pem")
+	caCertPem, err := os.ReadFile("client.pem")
 	f.ErrFatalCheck("err while reading client.pem", err)
 
 	if ok := certPool.AppendCertsFromPEM(caCertPem); !ok {
