@@ -8,7 +8,6 @@ import (
 	f "memtracker/internal/function"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
@@ -43,7 +42,7 @@ var (
 )
 
 type ClientConfig struct {
-	Address        string   `env:"ADDRESS" envDefault:"http://localhost:8080" json:"address"`
+	Address        string   `env:"ADDRESS" envDefault:"localhost:8080" json:"address"`
 	ReportInterval Interval `env:"REPORT_INTERVAL" envDefault:"10s" json:"report_interval"`
 	PollInterval   Interval `env:"POLL_INTERVAL" envDefault:"2s" json:"poll_interval"`
 	Hash           string   `env:"KEY"`
@@ -53,8 +52,11 @@ type ClientConfig struct {
 }
 
 var (
-	assignNonTLS = func() { ClientCfg.TransportCfg = &http.Transport{} }
-	assignTLS    = func() {
+	assignNonTLS = func() {
+		ClientCfg.Address = "http://" + ClientCfg.Address
+		ClientCfg.TransportCfg = &http.Transport{}
+	}
+	assignTLS = func() {
 		if crt, err := certTemplate(ClientCfg.CryptoKey); err == nil {
 			ClientCfg.TransportCfg = &http.Transport{
 				TLSClientConfig: &tls.Config{
@@ -62,9 +64,10 @@ var (
 					Certificates:       []tls.Certificate{crt},
 				},
 			}
-			ClientCfg.Address = strings.Replace(ClientCfg.Address, "http://", "https://", -1)
+			ClientCfg.Address = "https://" + ClientCfg.Address
 			return
 		}
+		ClientCfg.Address = "http://" + ClientCfg.Address
 		ClientCfg.TransportCfg = &http.Transport{}
 	}
 )
@@ -93,7 +96,7 @@ func initFlags() {
 	f.ErrFatalCheck("", err)
 
 	f.CompareStringsDo(cfgFile, "", func() { readConfigFile(cfgFile) })
-	f.CompareStringsDo(address, "", func() { ClientCfg.Address = "http://" + address })
+	f.CompareStringsDo(address, "", func() { ClientCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ClientCfg.Hash = hash })
 	f.CompareStringsDo(ClientCfg.CryptoKey, "", func() {})
 	f.CompareIntsDo(limit, 1, func() { ClientCfg.Limit = limit })
