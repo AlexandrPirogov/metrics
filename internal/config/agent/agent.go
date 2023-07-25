@@ -84,17 +84,20 @@ func initFlags() {
 
 	if ClientCfg.CryptoKey == "" {
 		ClientCfg.TransportCfg = &http.Transport{}
+		ClientCfg.Address = "http://" + ClientCfg.Address
 	} else {
-		certificates := []tls.Certificate{}
+		clientConf := &tls.Config{}
 		crt, err := certTemplate(ClientCfg.CryptoKey)
+
 		if err == nil {
-			certificates = append(certificates, crt)
+			clientConf.InsecureSkipVerify = true
+			clientConf.Certificates = []tls.Certificate{crt}
+			ClientCfg.Address = "https://" + ClientCfg.Address
+		} else {
+			ClientCfg.Address = "http://" + ClientCfg.Address
 		}
 		ClientCfg.TransportCfg = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-				Certificates:       certificates,
-			},
+			//	TLSClientConfig: clientConf,
 		}
 	}
 

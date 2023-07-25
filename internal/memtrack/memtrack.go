@@ -78,6 +78,7 @@ func NewHTTPMemTracker() httpMemTracker {
 
 	client := client.NewClient(cfg.Address, "application/json")
 	go client.Listen()
+	log.Printf("addres client: %s", cfg.Address)
 	return httpMemTracker{
 		Host:           cfg.Address,
 		PollInterval:   poll,
