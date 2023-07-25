@@ -85,8 +85,8 @@ var (
 )
 
 func Exec() {
-	initFlags()
 	initEnv()
+	initFlags()
 }
 
 func initEnv() {
