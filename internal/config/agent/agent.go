@@ -38,7 +38,7 @@ var (
 
 // Configs
 var (
-	ClientCfg = ClientConfig{} // Config for agent
+	ClientCfg = &ClientConfig{} // Config for agent
 )
 
 type ClientConfig struct {
