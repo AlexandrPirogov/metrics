@@ -1,3 +1,4 @@
+// Package server provides an API for the http.server instance
 package server
 
 import (
@@ -22,7 +23,20 @@ type MetricsHandler interface {
 	UpdatesHandlerJSON(w http.ResponseWriter, r *http.Request)
 }
 
-func NewMetricServer(h MetricsHandler, ctx context.Context) *http.Server {
+type metricServer struct {
+	http *http.Server
+	Conf server.ServerConfig
+}
+
+func (m *metricServer) ListenAndServe() error {
+	return m.Conf.Run(m.http)
+}
+
+func (m *metricServer) Shutdown(ctx context.Context) error {
+	return m.http.Shutdown(ctx)
+}
+
+func NewMetricServer(h MetricsHandler, ctx context.Context) *metricServer {
 	cfg := server.ServerCfg
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -43,9 +57,12 @@ func NewMetricServer(h MetricsHandler, ctx context.Context) *http.Server {
 	})
 	r.Get("/ping", h.PingHandler)
 	r.Mount("/debug", middleware.Profiler())
-	return &http.Server{
-		Addr:        cfg.Address,
-		Handler:     r,
-		BaseContext: func(listener net.Listener) context.Context { return ctx },
+	return &metricServer{
+		&http.Server{
+			Addr:        cfg.Address,
+			Handler:     r,
+			BaseContext: func(listener net.Listener) context.Context { return ctx },
+		},
+		cfg,
 	}
 }

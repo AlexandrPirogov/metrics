@@ -1,4 +1,4 @@
-// Package collects system's metrics
+// Package memtrack collects system's metrics
 // To see avaible metrics see gauges.go
 package memtrack
 
@@ -58,7 +58,7 @@ func (h httpMemTracker) update() {
 	h.MetricsContainer.InvokeTrackers()
 }
 
-// NewHttpMemTracker Creates new instance of HttpMemTracker
+// NewHTTPMemTracker Creates new instance of HttpMemTracker
 //
 // Pre-cond: Given client instance and host = addr:port
 //
@@ -78,6 +78,7 @@ func NewHTTPMemTracker() httpMemTracker {
 
 	client := client.NewClient(cfg.Address, "application/json")
 	go client.Listen()
+	log.Printf("addres client: %s", cfg.Address)
 	return httpMemTracker{
 		Host:           cfg.Address,
 		PollInterval:   poll,

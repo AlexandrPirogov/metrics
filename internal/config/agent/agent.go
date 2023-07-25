@@ -1,7 +1,11 @@
 package agent
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"log"
+	"net/http"
+	"os"
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
@@ -39,6 +43,8 @@ type ClientConfig struct {
 	PollInterval   Interval `env:"POLL_INTERVAL" envDefault:"2s"`
 	Hash           string   `env:"KEY"`
 	Limit          int      `env:"RATE_LIMIT" envDefault:"1"`
+	CryptoKey      string   `env:"CRYPTO_KEY"`
+	TransportCfg   *http.Transport
 }
 
 func Exec() {
@@ -76,4 +82,45 @@ func initFlags() {
 		ClientCfg.Limit = limit
 	}
 
+	if ClientCfg.CryptoKey == "" {
+		ClientCfg.TransportCfg = &http.Transport{}
+		ClientCfg.Address = "http://" + ClientCfg.Address
+	} else {
+		clientConf := &tls.Config{}
+		crt, err := certTemplate(ClientCfg.CryptoKey)
+
+		if err == nil {
+			clientConf.InsecureSkipVerify = true
+			clientConf.Certificates = []tls.Certificate{crt}
+			ClientCfg.Address = "https://" + ClientCfg.Address
+		} else {
+			ClientCfg.Address = "http://" + ClientCfg.Address
+		}
+		ClientCfg.TransportCfg = &http.Transport{
+			TLSClientConfig: clientConf,
+		}
+	}
+
+}
+
+func certTemplate(clientKet string) (tls.Certificate, error) {
+	crt, err := tls.LoadX509KeyPair("client.pem", "client.key")
+	if err != nil {
+		log.Printf("err while loading x509 key pair: %v", err)
+		return crt, err
+	}
+	certPool, err := x509.SystemCertPool()
+	if err != nil {
+		log.Printf("system certpool %v", err)
+		return crt, err
+	}
+	caCertPem, err := os.ReadFile("cert.pem")
+	if err != nil {
+		log.Printf("err while reading cert.pem %v", err)
+		return crt, err
+	}
+	if ok := certPool.AppendCertsFromPEM(caCertPem); !ok {
+		log.Printf("invalid cert in CA PEM")
+	}
+	return crt, nil
 }

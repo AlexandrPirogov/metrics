@@ -1,4 +1,4 @@
-// Trackers are used to collect all types of measures
+// Package trackers are used to collect all types of measures
 //
 // Trackers request measures to update own inner metrics
 package trackers

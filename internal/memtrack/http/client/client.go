@@ -1,3 +1,4 @@
+// Package client provides an http Client to send metrics for server
 package client
 
 import (
@@ -14,6 +15,7 @@ import (
 
 func NewClient(host, contentType string) Client {
 	wrksCnt := agent.ClientCfg.Limit
+
 	return Client{
 		Host:        host,
 		ContentType: contentType,
@@ -61,7 +63,7 @@ func (c Client) work() {
 
 func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]interface{}) {
 	toMarshal := c.BuildCounters(metric, mapMetrics)
-	url := "http://" + c.Host + "/updates/"
+	url := c.Host + "/updates/"
 	log.Printf("sending to host: %s", url)
 
 	js, err := json.Marshal(toMarshal)
@@ -90,7 +92,7 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 
 func (c Client) SendGauges(metric metrics.Metricable, mapMetrics map[string]interface{}) {
 	toMarshal := c.BuildGauges(metric, mapMetrics)
-	url := "http://" + c.Host + "/updates/"
+	url := c.Host + "/updates/"
 	log.Printf("sending to host: %s", url)
 
 	js, err := json.Marshal(toMarshal)
