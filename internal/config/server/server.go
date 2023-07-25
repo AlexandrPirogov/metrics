@@ -88,7 +88,7 @@ func Exec() {
 	rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "PATH TO CONFIG FILE")
 
 	err := rootServerCmd.Execute()
-	errFatalCheck("", err)
+	f.ErrFatalCheck("", err)
 
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 
@@ -98,10 +98,10 @@ func Exec() {
 
 func initEnv() {
 	err := env.Parse(&ServerCfg)
-	errFatalCheck("error while read server env variables", err)
+	f.ErrFatalCheck("error while read server env variables", err)
 
 	err = env.Parse(&JournalCfg)
-	errFatalCheck("error while read journal env variables", err)
+	f.ErrFatalCheck("error while read journal env variables", err)
 }
 
 func initFlags() {
@@ -113,7 +113,7 @@ func initFlags() {
 	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
 
 	err := rootServerCmd.Execute()
-	errFatalCheck("flags error", err)
+	f.ErrFatalCheck("flags error", err)
 
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
@@ -126,17 +126,11 @@ func initFlags() {
 
 func readConfigFile(path string) {
 	bytes, err := os.ReadFile(path)
-	errFatalCheck("", err)
+	f.ErrFatalCheck("", err)
 
 	err = json.Unmarshal(bytes, &ServerCfg)
-	errFatalCheck("err while reading config", err)
+	f.ErrFatalCheck("err while reading config", err)
 
 	err = json.Unmarshal(bytes, &JournalCfg)
-	errFatalCheck("err while reading config", err)
-}
-
-func errFatalCheck(msg string, err error) {
-	if err != nil {
-		log.Fatalf("%s: %v", msg, err)
-	}
+	f.ErrFatalCheck("err while reading config", err)
 }
