@@ -25,7 +25,7 @@ type MetricsHandler interface {
 
 type metricServer struct {
 	http *http.Server
-	Conf *server.ServerConfig
+	Conf server.ServerConfig
 }
 
 func (m *metricServer) ListenAndServe() error {
