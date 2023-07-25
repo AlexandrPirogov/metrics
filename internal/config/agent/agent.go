@@ -79,7 +79,7 @@ func Exec() {
 }
 
 func initEnv() {
-	err := env.Parse(&ClientCfg)
+	err := env.Parse(ClientCfg)
 	f.ErrFatalCheck("error while read client env variables", err)
 }
 
