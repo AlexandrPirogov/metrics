@@ -97,7 +97,7 @@ func initFlags() {
 			ClientCfg.Address = "http://" + ClientCfg.Address
 		}
 		ClientCfg.TransportCfg = &http.Transport{
-			//	TLSClientConfig: clientConf,
+			TLSClientConfig: clientConf,
 		}
 	}
 
