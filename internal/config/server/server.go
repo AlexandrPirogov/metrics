@@ -1,8 +1,10 @@
 package server
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
@@ -18,6 +20,7 @@ const (
 	DefaultHash          = ""
 	DefaultDBURL         = ""
 	DefaultCryptoKey     = ""
+	DefaultCfgFile       = ""
 	DefaultRestore       = true
 )
 
@@ -34,11 +37,13 @@ var (
 // flags
 var (
 	address       string // agent & server addr
-	restore       bool   // Should db be restored
+	cfgFile       string // path to config json file
 	storeInterval string // period of replication
 	storeFile     string // file where replication is goint to be written
 	hash          string // key for hashing
 	dbURL         string // url connection for postgres
+
+	restore bool // Should db be restored
 )
 
 // Configs
@@ -48,32 +53,56 @@ var (
 )
 
 type ServerConfig struct {
-	Address   string `env:"ADDRESS" envDefault:"localhost:8080"`
+	Address   string `env:"ADDRESS" envDefault:"localhost:8080" json:"address"`
 	Hash      string `env:"KEY"`
-	DBUrl     string `env:"DATABASE_DSN"`
-	CryptoKey string `env:"CRYPTO_KEY"`
+	DBUrl     string `env:"DATABASE_DSN" json:"database_dsn"`
+	CryptoKey string `env:"CRYPTO_KEY" json:"crypto_key"`
 	Run       func(serv *http.Server) error
 }
 
 type JournalConfig struct {
-	StoreFile    string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore      bool   `env:"RESTORE" envDefault:"true"`
-	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300s"`
+	StoreFile    string `json:"store_file" env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
+	Restore      bool   `json:"restore" env:"RESTORE" envDefault:"true"`
+	ReadInterval string `json:"store_interval" env:"STORE_INTERVAL" envDefault:"300s"`
 }
 
+// Helper function-values for applying
+type assignFunction func()
+
+var (
+	serverTLSAssign = func() {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running non tls server")
+			return serv.ListenAndServe()
+		}
+	}
+
+	serverNonTLSAssign = func() {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running tls server")
+			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
+		}
+	}
+)
+
 func Exec() {
+	rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "PATH TO CONFIG FILE")
+
+	err := rootServerCmd.Execute()
+	errFatalCheck("", err)
+
+	checkDefVal(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+
 	initEnv()
 	initFlags()
 }
 
 func initEnv() {
-	if err := env.Parse(&ServerCfg); err != nil {
-		log.Fatalf("error while read server env variables %v", err)
-	}
+	err := env.Parse(&ServerCfg)
+	errFatalCheck("error while read server env variables", err)
 
-	if err := env.Parse(&JournalCfg); err != nil {
-		log.Fatalf("error while read journal env variables %v", err)
-	}
+	err = env.Parse(&JournalCfg)
+	errFatalCheck("error while read journal env variables", err)
 }
 
 func initFlags() {
@@ -84,39 +113,46 @@ func initFlags() {
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
 	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
 
-	if err := rootServerCmd.Execute(); err != nil {
-		log.Fatalf("%v", err)
+	err := rootServerCmd.Execute()
+	errFatalCheck("flags error", err)
+
+	checkDefVal(address, DefaultHost, func() { ServerCfg.Address = address })
+	checkDefVal(hash, DefaultHash, func() { ServerCfg.Hash = hash })
+	checkDefVal(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
+	checkDefVal(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
+	checkDefVal(dbURL, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
+	checkDefValWithOpt(ServerCfg.CryptoKey, DefaultCryptoKey, serverNonTLSAssign, serverTLSAssign)
+
+}
+
+func readConfigFile(path string) {
+	bytes, err := os.ReadFile(path)
+	errFatalCheck("", err)
+
+	err = json.Unmarshal(bytes, &ServerCfg)
+	errFatalCheck("err while reading config", err)
+
+	err = json.Unmarshal(bytes, &JournalCfg)
+	errFatalCheck("err while reading config", err)
+}
+
+func checkDefVal(check string, defaulValue string, actionOnTrue assignFunction) {
+	if check != defaulValue {
+		actionOnTrue()
+	}
+}
+
+func checkDefValWithOpt(check string, defaulValue string, actionOnTrue assignFunction, actionOnFalse assignFunction) {
+	if check != defaulValue {
+		actionOnTrue()
+		return
 	}
 
-	if address != DefaultHost {
-		ServerCfg.Address = address
-	}
+	actionOnFalse()
+}
 
-	if hash != "" {
-		ServerCfg.Hash = hash
-	}
-
-	if storeInterval != DefaultStoreInterval {
-		JournalCfg.ReadInterval = storeInterval
-	}
-
-	if storeFile != DefaultFileStore {
-		JournalCfg.StoreFile = storeFile
-	}
-
-	if ServerCfg.DBUrl == DefaultDBURL {
-		ServerCfg.DBUrl = dbURL
-	}
-
-	if ServerCfg.CryptoKey == DefaultCryptoKey {
-		ServerCfg.Run = func(serv *http.Server) error {
-			log.Println("Running non tls server")
-			return serv.ListenAndServe()
-		}
-	} else {
-		ServerCfg.Run = func(serv *http.Server) error {
-			log.Println("Running tls server")
-			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
-		}
+func errFatalCheck(msg string, err error) {
+	if err != nil {
+		log.Fatalf("%s: %v", msg, err)
 	}
 }
