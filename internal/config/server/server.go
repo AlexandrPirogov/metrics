@@ -111,12 +111,12 @@ func initFlags() {
 		log.Fatalf("%v", err)
 	}
 
-	//	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+	//f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
 	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
 	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
-	f.CompareStringsDo(ServerCfg.DBUrl, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
+	f.CompareStringsDo(dbURL, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
 	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverNonTLSAssign, serverTLSAssign)
 
 }
