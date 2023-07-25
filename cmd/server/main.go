@@ -39,10 +39,10 @@ func main() {
 	}()
 
 	cancelChan := make(chan os.Signal, 1)
-	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
+	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGKILL)
 	log.Printf("started server on %s\n", server.Conf.Address)
-	<-cancelChan
-	log.Printf("os.Interrupt-- shutting down...\n")
+	sig := <-cancelChan
+	log.Printf("Got signal %v\n", sig)
 
 	ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancelShutdown()
@@ -51,9 +51,10 @@ func main() {
 		log.Printf("Shutdown error %v\n", err)
 		defer os.Exit(1)
 		return
-	} else {
-		log.Printf("Server shutdowned\n")
 	}
+
+	log.Printf("Server shutdowned\n")
+
 	cancel()
 	defer os.Exit(0)
 	close(cancelChan)
