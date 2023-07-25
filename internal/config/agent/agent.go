@@ -9,6 +9,7 @@ import (
 	f "memtracker/internal/function"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
@@ -55,14 +56,17 @@ type ClientConfig struct {
 var (
 	assignNonTLS = func() { ClientCfg.TransportCfg = &http.Transport{} }
 	assignTLS    = func() {
-		ClientCfg.TransportCfg = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-				Certificates: []tls.Certificate{
-					certTemplate(ClientCfg.CryptoKey),
+		if crt, err := certTemplate(ClientCfg.CryptoKey); err == nil {
+			ClientCfg.TransportCfg = &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+					Certificates:       []tls.Certificate{crt},
 				},
-			},
+			}
+			ClientCfg.Address = strings.Replace(ClientCfg.Address, "http://", "https://", -1)
+			return
 		}
+		ClientCfg.TransportCfg = &http.Transport{}
 	}
 )
 
@@ -97,9 +101,12 @@ func initFlags() {
 	f.CompareStringsDoOthewise(cfgFile, "", assignTLS, assignNonTLS)
 }
 
-func certTemplate(clientKet string) tls.Certificate {
+func certTemplate(clientKet string) (tls.Certificate, error) {
 	crt, err := tls.LoadX509KeyPair("client.pem", clientKet)
-	f.ErrFatalCheck("err while loading x509 key pair", err)
+	if err != nil {
+		return crt, err
+	}
+	//f.ErrFatalCheck("err while loading x509 key pair", err)
 
 	certPool, err := x509.SystemCertPool()
 	f.ErrFatalCheck("system certpool", err)
@@ -111,7 +118,7 @@ func certTemplate(clientKet string) tls.Certificate {
 		log.Fatal("invalid cert in CA PEM")
 	}
 
-	return crt
+	return crt, nil
 }
 
 func readConfigFile(path string) {
