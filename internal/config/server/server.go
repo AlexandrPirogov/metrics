@@ -50,7 +50,7 @@ var (
 
 // Configs
 var (
-	ServerCfg  = ServerConfig{}  // Config for server
+	ServerCfg  = &ServerConfig{} // Config for server
 	JournalCfg = JournalConfig{} //Config for replication
 )
 
@@ -111,9 +111,7 @@ func initFlags() {
 		log.Fatalf("%v", err)
 	}
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
-	if address != DefaultHost {
-		ServerCfg.Address = address
-	}
+	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 
 	if hash != "" {
 		ServerCfg.Hash = hash
