@@ -1,5 +1,7 @@
 package function
 
+import "log"
+
 // Helper function-values for applying
 type assignFunction func()
 
@@ -21,5 +23,11 @@ func CompareStringsDoOthewise(check string, defaulValue string, actionOnTrue ass
 func CompareBoolssDo(check bool, defaulValue bool, actionOnTrue assignFunction) {
 	if check != defaulValue {
 		actionOnTrue()
+	}
+}
+
+func ErrFatalCheck(msg string, err error) {
+	if err != nil {
+		log.Fatalf("%s: %v", msg, err)
 	}
 }
