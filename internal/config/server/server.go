@@ -100,7 +100,7 @@ func initEnv() {
 func initFlags() {
 
 	log.Printf("server cfg from env: %v", ServerCfg)
-	log.Printf("jounrla cfg from env: %v", ServerCfg)
+	log.Printf("jounrla cfg from env: %v", JournalCfg)
 	rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json config path")
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
@@ -132,7 +132,7 @@ func initFlags() {
 	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverTLSAssign, serverNonTLSAssign)
 
 	log.Printf("server cfg from flags: %v", ServerCfg)
-	log.Printf("jounrla cfg from flasg: %v", ServerCfg)
+	log.Printf("jounrla cfg from flasg: %v", JournalCfg)
 }
 
 func readConfigFile(path string) {
