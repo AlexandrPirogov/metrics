@@ -90,13 +90,11 @@ func Exec() {
 }
 
 func initEnv() {
-	if err := env.Parse(ServerCfg); err != nil {
-		log.Fatalf("error while read server env variables %v", err)
-	}
+	errEnvServer := env.Parse(ServerCfg)
+	f.ErrFatalCheck("error while read server env variables", errEnvServer)
 
-	if err := env.Parse(JournalCfg); err != nil {
-		log.Fatalf("error while read journal env variables %v", err)
-	}
+	errEnvJournal := env.Parse(JournalCfg)
+	f.ErrFatalCheck("error while read journal env variables", errEnvJournal)
 }
 
 func initFlags() {
@@ -116,7 +114,6 @@ func initFlags() {
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
 	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
-	f.CompareBoolssDo(restore, true, func() { JournalCfg.Restore = false })
 
 	f.CompareStringsDoOthewise(storeFile, "",
 		func() { JournalCfg.StoreFile = storeFile },
