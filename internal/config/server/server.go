@@ -112,13 +112,8 @@ func initFlags() {
 		log.Fatalf("%v", err)
 	}
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
-	if address != DefaultHost {
-		ServerCfg.Address = address
-	}
-
-	if hash != "" {
-		ServerCfg.Hash = hash
-	}
+	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
+	f.CompareStringsDo(hash, "", func() { ServerCfg.Hash = hash })
 
 	if storeInterval != DefaultStoreInterval {
 		JournalCfg.ReadInterval = storeInterval
