@@ -63,6 +63,6 @@ func NewMetricServer(h MetricsHandler, ctx context.Context) *metricServer {
 			Handler:     r,
 			BaseContext: func(listener net.Listener) context.Context { return ctx },
 		},
-		cfg,
+		*cfg,
 	}
 }

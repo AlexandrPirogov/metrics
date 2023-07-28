@@ -26,6 +26,12 @@ func CompareBoolssDo(check bool, defaulValue bool, actionOnTrue onSuccessFunctio
 	}
 }
 
+func CompareBoolssDoOthewise(check int, with int, actionOnTrue onSuccessFunction, actionOnFakse onSuccessFunction) {
+	if check != with {
+		actionOnTrue()
+	}
+}
+
 func CompareIntsDo(check int, with int, actionOnTrue onSuccessFunction) {
 	if check != with {
 		actionOnTrue()
