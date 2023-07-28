@@ -63,9 +63,9 @@ type ServerConfig struct {
 }
 
 type JournalConfig struct {
-	StoreFile    string `json:"store_file" env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore      bool   `json:"restore" env:"RESTORE" envDefault:"true"`
-	ReadInterval string `json:"store_interval" env:"STORE_INTERVAL" envDefault:"300s"`
+	StoreFile    string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json" json:"store_file" `
+	Restore      bool   `env:"RESTORE" envDefault:"true" json:"restore"`
+	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300s" json:"store_interval"`
 }
 
 var (
