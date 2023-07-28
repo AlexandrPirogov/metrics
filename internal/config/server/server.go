@@ -122,7 +122,7 @@ func initFlags() {
 
 	//f.CompareStringsDo(ServerCfg.DBUrl, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
 
-	if ServerCfg.DBUrl == DefaultDBURL {
+	if ServerCfg.DBUrl != DefaultDBURL {
 		ServerCfg.DBUrl = dbURL
 	}
 
