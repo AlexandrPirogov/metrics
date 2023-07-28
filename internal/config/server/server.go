@@ -120,7 +120,12 @@ func initFlags() {
 		func() { JournalCfg.StoreFile = DefaultCfgFile },
 	)
 
-	f.CompareStringsDo(ServerCfg.DBUrl, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
+	//f.CompareStringsDo(ServerCfg.DBUrl, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
+
+	if ServerCfg.DBUrl == DefaultDBURL {
+		ServerCfg.DBUrl = dbURL
+	}
+
 	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverTLSAssign, serverNonTLSAssign)
 
 	log.Printf("server cfg %v", ServerCfg)

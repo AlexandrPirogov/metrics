@@ -125,7 +125,9 @@ func certTemplate(clientKet string) (tls.Certificate, error) {
 
 func readConfigFile(path string) {
 	bytes, err := os.ReadFile(path)
-	f.ErrFatalCheck("err while reading config json file", err)
+	if err != nil {
+		return
+	}
 
 	log.Printf("found agent config file %s", path)
 	err = json.Unmarshal(bytes, &ClientCfg)
