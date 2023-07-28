@@ -101,36 +101,48 @@ func initFlags() {
 
 	log.Printf("server cfg from env: %v", ServerCfg)
 	log.Printf("jounrla cfg from env: %v", JournalCfg)
-	rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json config path")
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
 	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
-	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", DefaultDBURL, "database url connection")
+	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
 
-	err := rootServerCmd.Execute()
-	f.ErrFatalCheck("", err)
-
-	//f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
-	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
-	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
-	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
-
-	f.CompareStringsDoOthewise(storeFile, DefaultFileStore,
-		func() { JournalCfg.StoreFile = storeFile },
-		func() { JournalCfg.StoreFile = DefaultCfgFile },
-	)
-
-	//f.CompareStringsDo(ServerCfg.DBUrl, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
-	log.Printf("DB URL%s", ServerCfg.DBUrl)
-	if ServerCfg.DBUrl == DefaultDBURL {
-		ServerCfg.DBUrl = dbURL
-		log.Printf("Chaningn db url%s", ServerCfg.DBUrl)
+	if err := rootServerCmd.Execute(); err != nil {
+		log.Fatalf("%v", err)
+	}
+	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+	if address != DefaultHost {
+		ServerCfg.Address = address
 	}
 
-	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverTLSAssign, serverNonTLSAssign)
+	if hash != "" {
+		ServerCfg.Hash = hash
+	}
 
+	if storeInterval != DefaultStoreInterval {
+		JournalCfg.ReadInterval = storeInterval
+	}
+
+	if storeFile != DefaultFileStore {
+		JournalCfg.StoreFile = storeFile
+	}
+
+	if ServerCfg.DBUrl == DefaultDBURL {
+		ServerCfg.DBUrl = dbURL
+	}
+
+	if ServerCfg.CryptoKey == DefaultCryptoKey {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running non tls server")
+			return serv.ListenAndServe()
+		}
+	} else {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running tls server")
+			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
+		}
+	}
 	log.Printf("server cfg from flags: %v", ServerCfg)
 	log.Printf("jounrla cfg from flasg: %v", JournalCfg)
 }
