@@ -69,14 +69,14 @@ type JournalConfig struct {
 }
 
 var (
-	serverTLSAssign = func() {
+	serverNonTLSAssign = func() {
 		ServerCfg.Run = func(serv *http.Server) error {
 			log.Println("Running non tls server")
 			return serv.ListenAndServe()
 		}
 	}
 
-	serverNonTLSAssign = func() {
+	serverTLSAssign = func() {
 		ServerCfg.Run = func(serv *http.Server) error {
 			log.Println("Running tls server")
 			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
@@ -112,11 +112,11 @@ func initFlags() {
 	err := rootServerCmd.Execute()
 	f.ErrFatalCheck("", err)
 
-	//f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
 	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
-	//f.CompareBoolssDo(restore, true, func() { JournalCfg.Restore = false })
+	f.CompareBoolssDo(restore, true, func() { JournalCfg.Restore = false })
 
 	f.CompareStringsDoOthewise(storeFile, "",
 		func() { JournalCfg.StoreFile = storeFile },
@@ -132,7 +132,10 @@ func initFlags() {
 
 func readConfigFile(path string) {
 	bytes, err := os.ReadFile(path)
-	f.ErrFatalCheck("", err)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	err = json.Unmarshal(bytes, &ServerCfg)
 	f.ErrFatalCheck("err while reading config", err)
