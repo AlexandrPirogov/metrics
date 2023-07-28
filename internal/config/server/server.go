@@ -114,14 +114,8 @@ func initFlags() {
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ServerCfg.Hash = hash })
-
-	if storeInterval != DefaultStoreInterval {
-		JournalCfg.ReadInterval = storeInterval
-	}
-
-	if storeFile != DefaultFileStore {
-		JournalCfg.StoreFile = storeFile
-	}
+	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
+	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
 
 	if ServerCfg.DBUrl == DefaultDBURL {
 		ServerCfg.DBUrl = dbURL
