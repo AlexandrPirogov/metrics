@@ -99,13 +99,15 @@ func initEnv() {
 
 func initFlags() {
 
+	log.Printf("server cfg from env: %v", ServerCfg)
+	log.Printf("jounrla cfg from env: %v", ServerCfg)
 	rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json config path")
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
 	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
-	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
+	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", DefaultDBURL, "database url connection")
 
 	err := rootServerCmd.Execute()
 	f.ErrFatalCheck("", err)
@@ -115,21 +117,22 @@ func initFlags() {
 	f.CompareStringsDo(hash, DefaultHash, func() { ServerCfg.Hash = hash })
 	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
 
-	f.CompareStringsDoOthewise(storeFile, "",
+	f.CompareStringsDoOthewise(storeFile, DefaultFileStore,
 		func() { JournalCfg.StoreFile = storeFile },
 		func() { JournalCfg.StoreFile = DefaultCfgFile },
 	)
 
 	//f.CompareStringsDo(ServerCfg.DBUrl, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
-
-	if ServerCfg.DBUrl != DefaultDBURL {
+	log.Printf("DB URL%s", ServerCfg.DBUrl)
+	if ServerCfg.DBUrl == DefaultDBURL {
 		ServerCfg.DBUrl = dbURL
+		log.Printf("Chaningn db url%s", ServerCfg.DBUrl)
 	}
 
 	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverTLSAssign, serverNonTLSAssign)
 
-	log.Printf("server cfg %v", ServerCfg)
-	log.Printf("journal cfg %v", JournalCfg)
+	log.Printf("server cfg from flags: %v", ServerCfg)
+	log.Printf("jounrla cfg from flasg: %v", ServerCfg)
 }
 
 func readConfigFile(path string) {
