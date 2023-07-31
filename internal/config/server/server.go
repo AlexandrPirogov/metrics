@@ -99,9 +99,6 @@ func initEnv() {
 
 func initFlags() {
 
-	log.Printf("server cfg from env: %v", ServerCfg)
-	log.Printf("jounrla cfg from env: %v", JournalCfg)
-
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
@@ -112,29 +109,14 @@ func initFlags() {
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
+
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ServerCfg.Hash = hash })
 	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
 	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
-
-	if ServerCfg.DBUrl == DefaultDBURL {
-		ServerCfg.DBUrl = dbURL
-	}
-
-	if ServerCfg.CryptoKey == DefaultCryptoKey {
-		ServerCfg.Run = func(serv *http.Server) error {
-			log.Println("Running non tls server")
-			return serv.ListenAndServe()
-		}
-	} else {
-		ServerCfg.Run = func(serv *http.Server) error {
-			log.Println("Running tls server")
-			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
-		}
-	}
-	log.Printf("server cfg from flags: %v", ServerCfg)
-	log.Printf("jounrla cfg from flasg: %v", JournalCfg)
+	f.CompareStringsDo(ServerCfg.DBUrl, DefaultDBURL, func() { ServerCfg.DBUrl = dbURL })
+	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverTLSAssign, serverNonTLSAssign)
 }
 
 func readConfigFile(path string) {
