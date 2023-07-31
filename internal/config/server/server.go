@@ -120,18 +120,8 @@ func initFlags() {
 	f.CompareStringsDo(ServerCfg.DBUrl, DefaultDBURL, func() {
 		ServerCfg.DBUrl = dbURL
 	})
+	f.CompareStringsDoOthewise(ServerCfg.CryptoKey, DefaultCryptoKey, serverTLSAssign, serverNonTLSAssign)
 
-	if ServerCfg.CryptoKey == DefaultCryptoKey {
-		ServerCfg.Run = func(serv *http.Server) error {
-			log.Println("Running non tls server")
-			return serv.ListenAndServe()
-		}
-	} else {
-		ServerCfg.Run = func(serv *http.Server) error {
-			log.Println("Running tls server")
-			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
-		}
-	}
 	log.Printf("server cfg from flags: %v", ServerCfg)
 	log.Printf("jounrla cfg from flasg: %v", JournalCfg)
 }
