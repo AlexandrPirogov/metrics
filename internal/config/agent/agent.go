@@ -104,6 +104,7 @@ func initFlags() {
 }
 
 func certTemplate(clientKet string) (tls.Certificate, error) {
+
 	crt, err := tls.LoadX509KeyPair("client.pem", clientKet)
 	if err != nil {
 		return crt, err
