@@ -24,6 +24,7 @@ const (
 	DefaultCryptoKey     = ""
 	DefaultCfgFile       = "/tmp/devops-metrics-db.json"
 	DefaultRestore       = true
+	DefaultSubnet        = ""
 )
 
 // commands
@@ -45,7 +46,8 @@ var (
 	hash          string // key for hashing
 	dbURL         string // url connection for postgres
 
-	restore bool // Should db be restored
+	restore bool   // Should db be restored
+	subnet  string //subneting
 )
 
 // Configs
@@ -60,7 +62,7 @@ type ServerConfig struct {
 	DBUrl     string `env:"DATABASE_DSN" json:"database_dsn"`
 	CryptoKey string `env:"CRYPTO_KEY" json:"crypto_key"`
 	Run       func(serv *http.Server) error
-	Subnet    string `json:"trusted_subnet"`
+	Subnet    string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
 }
 
 type JournalConfig struct {
@@ -110,6 +112,7 @@ func initFlags() {
 	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
 	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
+	rootServerCmd.PersistentFlags().StringVarP(&subnet, "subnet", "t", "", "trusted subnet")
 
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
@@ -119,6 +122,7 @@ func initFlags() {
 	f.CompareStringsDo(hash, "", func() { ServerCfg.Hash = hash })
 	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
 	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
+	f.CompareStringsDo(subnet, DefaultSubnet, func() { ServerCfg.Subnet = subnet })
 
 	if ServerCfg.DBUrl == DefaultDBURL {
 		ServerCfg.DBUrl = dbURL
