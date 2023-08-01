@@ -7,7 +7,7 @@ import (
 
 func SubnetValidate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Checiks subnet")
+		log.Printf("Request came with IP-FROM %s", r.RemoteAddr)
 		next.ServeHTTP(w, r)
 	})
 }
