@@ -1,4 +1,4 @@
-// Package handles job with MetricsState
+// Package kernel handles job with MetricsState
 // It is wrote with declarative paradigm
 package kernel
 

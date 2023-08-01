@@ -1,10 +1,15 @@
 package server
 
 import (
+	"encoding/json"
 	"log"
+	"net/http"
+	"os"
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
+
+	f "memtracker/internal/function"
 )
 
 type Interval string
@@ -16,6 +21,8 @@ const (
 	DefaultHost          = ""
 	DefaultHash          = ""
 	DefaultDBURL         = ""
+	DefaultCryptoKey     = ""
+	DefaultCfgFile       = "/tmp/devops-metrics-db.json"
 	DefaultRestore       = true
 )
 
@@ -32,30 +39,50 @@ var (
 // flags
 var (
 	address       string // agent & server addr
-	restore       bool   // Should db be restored
+	cfgFile       string // path to config json file
 	storeInterval string // period of replication
 	storeFile     string // file where replication is goint to be written
-	hash          string //key for hashing
+	hash          string // key for hashing
 	dbURL         string // url connection for postgres
+
+	restore bool // Should db be restored
 )
 
 // Configs
 var (
-	ServerCfg  = ServerConfig{}  // Config for server
-	JournalCfg = JournalConfig{} //Config for replication
+	ServerCfg  = &ServerConfig{}  // Config for server
+	JournalCfg = &JournalConfig{} //Config for replication
 )
 
 type ServerConfig struct {
-	Address string `env:"ADDRESS" envDefault:"localhost:8080"`
-	Hash    string `env:"KEY"`
-	DBUrl   string `env:"DATABASE_DSN"`
+	Address   string `env:"ADDRESS" envDefault:"localhost:8080" json:"address"`
+	Hash      string `env:"KEY"`
+	DBUrl     string `env:"DATABASE_DSN" json:"database_dsn"`
+	CryptoKey string `env:"CRYPTO_KEY" json:"crypto_key"`
+	Run       func(serv *http.Server) error
 }
 
 type JournalConfig struct {
-	StoreFile    string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore      bool   `env:"RESTORE" envDefault:"true"`
-	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300s"`
+	StoreFile    string `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json" json:"store_file" `
+	Restore      bool   `env:"RESTORE" envDefault:"true" json:"restore"`
+	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300s" json:"store_interval"`
 }
+
+var (
+	serverNonTLSAssign = func() {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running non tls server")
+			return serv.ListenAndServe()
+		}
+	}
+
+	serverTLSAssign = func() {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running tls server")
+			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
+		}
+	}
+)
 
 func Exec() {
 	initEnv()
@@ -63,16 +90,18 @@ func Exec() {
 }
 
 func initEnv() {
-	if err := env.Parse(&ServerCfg); err != nil {
-		log.Fatalf("error while read server env variables %v", err)
-	}
+	errEnvServer := env.Parse(ServerCfg)
+	f.ErrFatalCheck("error while read server env variables", errEnvServer)
 
-	if err := env.Parse(&JournalCfg); err != nil {
-		log.Fatalf("error while read journal env variables %v", err)
-	}
+	errEnvJournal := env.Parse(JournalCfg)
+	f.ErrFatalCheck("error while read journal env variables", errEnvJournal)
 }
 
 func initFlags() {
+
+	log.Printf("server cfg from env: %v", ServerCfg)
+	log.Printf("jounrla cfg from env: %v", JournalCfg)
+
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
@@ -83,24 +112,41 @@ func initFlags() {
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
-
-	if address != DefaultHost {
-		ServerCfg.Address = address
-	}
-
-	if hash != "" {
-		ServerCfg.Hash = hash
-	}
-
-	if storeInterval != DefaultStoreInterval {
-		JournalCfg.ReadInterval = storeInterval
-	}
-
-	if storeFile != DefaultFileStore {
-		JournalCfg.StoreFile = storeFile
-	}
+	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
+	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
+	f.CompareStringsDo(hash, "", func() { ServerCfg.Hash = hash })
+	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
+	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
 
 	if ServerCfg.DBUrl == DefaultDBURL {
 		ServerCfg.DBUrl = dbURL
 	}
+
+	if ServerCfg.CryptoKey == DefaultCryptoKey {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running non tls server")
+			return serv.ListenAndServe()
+		}
+	} else {
+		ServerCfg.Run = func(serv *http.Server) error {
+			log.Println("Running tls server")
+			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
+		}
+	}
+	log.Printf("server cfg from flags: %v", ServerCfg)
+	log.Printf("jounrla cfg from flasg: %v", JournalCfg)
+}
+
+func readConfigFile(path string) {
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = json.Unmarshal(bytes, &ServerCfg)
+	f.ErrFatalCheck("err while reading config", err)
+
+	err = json.Unmarshal(bytes, &JournalCfg)
+	f.ErrFatalCheck("err while reading config", err)
 }

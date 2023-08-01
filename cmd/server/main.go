@@ -12,7 +12,17 @@ import (
 	"time"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	log.Printf("Build version: %s", buildVersion)
+	log.Printf("Build date: %s", buildDate)
+	log.Printf("Build commit: %s", buildCommit)
+
 	config.Exec()
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -30,9 +40,9 @@ func main() {
 
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
-	log.Printf("started server on %s\n", server.Addr)
-	<-cancelChan
-	log.Printf("os.Interrupt-- shutting down...\n")
+	log.Printf("started server on %s\n", server.Conf.Address)
+	sig := <-cancelChan
+	log.Printf("Got signal %v\n", sig)
 
 	ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancelShutdown()
@@ -41,9 +51,10 @@ func main() {
 		log.Printf("Shutdown error %v\n", err)
 		defer os.Exit(1)
 		return
-	} else {
-		log.Printf("Server shutdowned\n")
 	}
+
+	log.Printf("Server shutdowned\n")
+
 	cancel()
 	defer os.Exit(0)
 	close(cancelChan)
