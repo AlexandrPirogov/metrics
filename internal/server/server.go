@@ -40,6 +40,9 @@ func NewMetricServer(h MetricsHandler, ctx context.Context) *metricServer {
 	cfg := server.ServerCfg
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	if cfg.Subnet != "" {
+		r.Use(middlewares.SubnetValidate)
+	}
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.GZIPer)
 		r.Use(middleware.AllowContentType("text/plain"))
