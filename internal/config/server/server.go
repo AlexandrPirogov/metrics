@@ -105,7 +105,7 @@ func initFlags() {
 	log.Printf("server cfg from env: %v", ServerCfg)
 	log.Printf("jounrla cfg from env: %v", JournalCfg)
 
-	rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json config")
+	//rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json config")
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
