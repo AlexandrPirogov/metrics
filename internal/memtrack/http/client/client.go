@@ -11,6 +11,8 @@ import (
 	"memtracker/internal/crypt"
 	"memtracker/internal/memtrack/metrics"
 	"net/http"
+
+	"github.com/net-byte/go-gateway"
 )
 
 func NewClient(host, contentType string) Client {
@@ -76,6 +78,8 @@ func (c Client) SendCounter(metric metrics.Metricable, mapMetrics map[string]int
 	request, _ := http.NewRequest(http.MethodPost, url, buffer)
 	request.Header.Add("Accept-Encoding", "gzip")
 	request.Header.Add("Content-Type", "application/json")
+	ip, _ := gateway.DiscoverGatewayIPv4()
+	request.Header.Add("X-Real-IP", ip.String())
 	resp, err := c.Client.Do(request)
 	if err != nil {
 		log.Print(err)
@@ -105,6 +109,8 @@ func (c Client) SendGauges(metric metrics.Metricable, mapMetrics map[string]inte
 	request, _ := http.NewRequest(http.MethodPost, url, buffer)
 	request.Header.Add("Accept-Encoding", "gzip")
 	request.Header.Add("Content-Type", "application/json")
+	ip, _ := gateway.DiscoverGatewayIPv4()
+	request.Header.Add("X-Real-IP", ip.String())
 	resp, err := c.Client.Do(request)
 	if err != nil {
 		log.Print(err)
