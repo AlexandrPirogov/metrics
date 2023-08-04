@@ -27,7 +27,7 @@ func NewJournal() Journal {
 		ReadInterval: read,
 		Restored:     map[string]tuples.Tupler{},
 		Channel:      make(chan []byte),
-		mux:          &sync.Mutex{},
+		mux:          sync.Mutex{},
 	}
 }
 
@@ -39,7 +39,7 @@ type Journal struct {
 	ReadInterval int
 	Restored     map[string]tuples.Tupler
 	Channel      chan []byte
-	mux          *sync.Mutex
+	mux          sync.Mutex
 }
 
 // Start make journal stats writing data to the given file in json format
