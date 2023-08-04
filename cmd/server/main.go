@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	cfg "memtracker/internal/config/server"
 	"memtracker/internal/server"
 	"os"
 	"os/signal"
@@ -17,6 +18,7 @@ var (
 )
 
 func main() {
+	cfg.Exec()
 	log.Printf("Build version: %s", buildVersion)
 	log.Printf("Build date: %s", buildDate)
 	log.Printf("Build commit: %s", buildCommit)
