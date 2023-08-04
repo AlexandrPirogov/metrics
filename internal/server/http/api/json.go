@@ -9,7 +9,7 @@ import (
 	"memtracker/internal/config/server"
 	"memtracker/internal/crypt"
 	"memtracker/internal/kernel/tuples"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 	"net/http"
 )
 

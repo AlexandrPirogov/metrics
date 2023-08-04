@@ -7,7 +7,7 @@ import (
 	"log"
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel/tuples"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 	"os"
 
 	"github.com/jackc/pgx/v5"

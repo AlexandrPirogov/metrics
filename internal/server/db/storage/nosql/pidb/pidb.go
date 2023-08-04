@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"memtracker/internal/kernel/tuples"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 	"sync"
 )
 

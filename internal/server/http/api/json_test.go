@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 	"memtracker/internal/server/db"
 	"net/http"
 	"net/http/httptest"

@@ -5,7 +5,7 @@ package trackers
 
 import (
 	"log"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 	"sync"
 )
 

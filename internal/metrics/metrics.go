@@ -146,7 +146,6 @@ func (m *Metrics) UnmarshalJSON(data []byte) error {
 }
 
 // Metricalbes entities should update own metrics by Read() errpr method
-// Read returns nil if success otherwise error
 type Metricable interface {
 	Read() error
 	String() string

@@ -3,7 +3,7 @@ package kernel
 import (
 	"errors"
 	"memtracker/internal/kernel/tuples"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

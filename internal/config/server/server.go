@@ -41,13 +41,15 @@ var (
 var (
 	address       string // agent & server addr
 	cfgFile       string // path to config json file
+	dbURL         string // url connection for postgres
+	hash          string // key for hashing
 	storeInterval string // period of replication
 	storeFile     string // file where replication is goint to be written
-	hash          string // key for hashing
-	dbURL         string // url connection for postgres
+	subnet        string //subneting
 
-	restore bool   // Should db be restored
-	subnet  string //subneting
+	restore bool // Should db be restored
+	rpc     bool //will the server use rpc
+
 )
 
 // Configs
@@ -63,6 +65,7 @@ type ServerConfig struct {
 	CryptoKey string `env:"CRYPTO_KEY" json:"crypto_key"`
 	Run       func(serv *http.Server) error
 	Subnet    string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
+	RPC       bool   `env:"RPC" envDefault:"false" json:"rpc"`
 }
 
 type JournalConfig struct {
@@ -87,7 +90,7 @@ var (
 	}
 )
 
-func Exec() {
+func init() {
 	initEnv()
 	initFlags()
 }
@@ -113,10 +116,16 @@ func initFlags() {
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
 	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
 	rootServerCmd.PersistentFlags().StringVarP(&subnet, "subnet", "t", "", "trusted subnet")
+	rootServerCmd.PersistentFlags().BoolVarP(&rpc, "rpc", "s", false, "set true if you want to use rpc")
 
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
+
+	if rpc {
+		ServerCfg.RPC = true
+	}
+
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ServerCfg.Hash = hash })

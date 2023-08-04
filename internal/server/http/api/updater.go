@@ -8,7 +8,7 @@ import (
 	"memtracker/internal/crypt"
 	"memtracker/internal/kernel"
 	"memtracker/internal/kernel/tuples"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 )
 
 // processUpdate updates metric value depends on metric's type
