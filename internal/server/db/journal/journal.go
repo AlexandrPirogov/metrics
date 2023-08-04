@@ -108,8 +108,9 @@ func (j *Journal) writeSynch(file *os.File) {
 	writer := bufio.NewWriter(file)
 	for {
 		if bytes, ok := <-j.Channel; ok {
+			bytes = append(bytes, '\n')
 			log.Printf("writing %s", bytes)
-			writer.Write(append(bytes, '\n'))
+			writer.Write(bytes)
 			writer.Flush()
 		} else {
 			break
@@ -137,7 +138,11 @@ func (j *Journal) Restore() ([][]byte, error) {
 	reader.Split(bufio.ScanLines)
 	for {
 		if reader.Scan() {
+			j.mux.Lock()
+			log.Printf("restoring: %s", reader.Bytes())
 			bytes = append(bytes, reader.Bytes())
+			time.Sleep(time.Millisecond * 1)
+			j.mux.Unlock()
 		} else {
 			break
 		}
