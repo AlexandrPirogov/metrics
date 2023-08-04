@@ -28,6 +28,7 @@ func NewJournal() Journal {
 		Restored:     map[string]tuples.Tupler{},
 		Channel:      make(chan []byte),
 		mux:          &sync.RWMutex{},
+		rpl:          &sync.RWMutex{},
 	}
 }
 
@@ -40,6 +41,7 @@ type Journal struct {
 	Restored     map[string]tuples.Tupler
 	Channel      chan []byte
 	mux          *sync.RWMutex
+	rpl          *sync.RWMutex
 }
 
 // Start make journal stats writing data to the given file in json format
@@ -76,9 +78,8 @@ func (j Journal) writeDelayed(file *os.File) {
 	defer file.Close()
 	writer := bufio.NewWriter(file)
 	read := time.NewTicker(time.Second * time.Duration(j.ReadInterval))
-	j.mux.Lock()
-	defer j.mux.Unlock()
 	for {
+		j.rpl.Lock()
 		<-read.C
 		for {
 			if bytes, ok := <-j.Channel; ok {
@@ -88,6 +89,7 @@ func (j Journal) writeDelayed(file *os.File) {
 				break
 			}
 		}
+		j.rpl.Unlock()
 	}
 }
 
@@ -97,17 +99,18 @@ func (j Journal) writeDelayed(file *os.File) {
 //
 // Post-cond: data written to the file
 func (j Journal) writeSynch(file *os.File) {
+
 	defer file.Close()
 	writer := bufio.NewWriter(file)
-	j.mux.Lock()
-	defer j.mux.Unlock()
 	for {
+		j.rpl.Lock()
 		if bytes, ok := <-j.Channel; ok {
 			writer.Write(append(bytes, '\n'))
 			writer.Flush()
 		} else {
 			break
 		}
+		j.rpl.Unlock()
 	}
 
 }
