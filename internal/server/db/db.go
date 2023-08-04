@@ -81,6 +81,7 @@ func (d *DB) restore(bytes [][]byte) {
 	for _, item := range bytes {
 		var metric metrics.Metrics
 		if err := json.Unmarshal(item, &metric); err != nil {
+			log.Printf("err while unmarshal %v", err)
 			continue
 		}
 		tuple := metric.ToTuple()
