@@ -61,7 +61,6 @@ func (c Client) Listen() {
 
 func (c Client) send(url string, js []byte) {
 	buffer := bytes.NewBuffer(js)
-	log.Printf("Sending :%s", buffer)
 	r, err := c.buildRequest(url, buffer)
 	if err != nil {
 		log.Println(err)
