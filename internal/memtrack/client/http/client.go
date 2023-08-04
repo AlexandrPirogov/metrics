@@ -74,11 +74,10 @@ func (c Client) send(url string, js []byte) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("error while readall %v", err)
 	}
-	log.Printf("got: %s", string(body))
 }
 
 func (c Client) buildGauges(metric metrics.Metricable, gauges map[string]interface{}) []metrics.Metrics {
