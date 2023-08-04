@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"log"
-	config "memtracker/internal/config/server"
 	"memtracker/internal/server"
-	"memtracker/internal/server/handlers/api"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,12 +21,9 @@ func main() {
 	log.Printf("Build date: %s", buildDate)
 	log.Printf("Build commit: %s", buildCommit)
 
-	config.Exec()
-	ctx, cancel := context.WithCancel(context.Background())
+	_, cancel := context.WithCancel(context.Background())
 
-	handler := api.NewHandler()
-	server := server.NewMetricServer(handler, ctx)
-	handler.DB.Start()
+	server := server.New()
 
 	go func() {
 		err := server.ListenAndServe()
@@ -40,7 +35,7 @@ func main() {
 
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
-	log.Printf("started server on %s\n", server.Conf.Address)
+	//log.Printf("started server on %s\n", server.Conf.Address)
 	sig := <-cancelChan
 	log.Printf("Got signal %v\n", sig)
 
