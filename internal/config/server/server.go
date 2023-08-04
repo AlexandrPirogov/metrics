@@ -90,7 +90,7 @@ var (
 	}
 )
 
-func init() {
+func Exec() {
 	initEnv()
 	initFlags()
 }
@@ -105,8 +105,6 @@ func initEnv() {
 
 func initFlags() {
 
-	log.Printf("server cfg from env: %v", ServerCfg)
-	log.Printf("jounrla cfg from env: %v", JournalCfg)
 
 	//rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json config")
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
@@ -149,7 +147,7 @@ func initFlags() {
 		}
 	}
 	log.Printf("server cfg from flags: %v", ServerCfg)
-	log.Printf("jounrla cfg from flasg: %v", JournalCfg)
+	log.Printf("jounra cfg from flasg: %v", JournalCfg)
 }
 
 func readConfigFile(path string) {

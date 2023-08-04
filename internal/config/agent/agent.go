@@ -72,7 +72,7 @@ type ClientConfig struct {
 	Protocol       string
 }
 
-func init() {
+func Exec() {
 	initEnv()
 	initFlags()
 
@@ -100,6 +100,15 @@ func initFlags() {
 	f.CompareStringsDo(address, "", func() { ClientCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ClientCfg.Hash = hash })
 	f.CompareStringsDo(ClientCfg.CryptoKey, "", func() {})
+
+	f.CompareStringsDoOthewise(pollInterval, "",
+		func() { ClientCfg.PollInterval = Interval(pollInterval) },
+		func() { ClientCfg.PollInterval = "2s" })
+
+	f.CompareStringsDoOthewise(reportInterval, "",
+		func() { ClientCfg.ReportInterval = Interval(reportInterval) },
+		func() { ClientCfg.ReportInterval = "10s" })
+
 	f.CompareIntsDo(limit, 1, func() { ClientCfg.Limit = limit })
 
 	if rpc {
@@ -109,7 +118,7 @@ func initFlags() {
 		f.CompareStringsDoOthewise(cfgFile, "", assignTLS, assignNonTLS)
 		f.CompareStringsDoOthewise(cfgFile, "", func() { ClientCfg.Protocol = "https://" }, func() { ClientCfg.Protocol = "http://" })
 	}
-
+	log.Printf("Agent config: %v", ClientCfg)
 }
 
 func certTemplate(clientKet string) (tls.Certificate, error) {
