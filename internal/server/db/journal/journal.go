@@ -139,6 +139,7 @@ func (j Journal) Restore() ([][]byte, error) {
 			break
 		}
 	}
+	log.Printf("Restored bytes %s", bytes)
 	return bytes, nil
 }
 
