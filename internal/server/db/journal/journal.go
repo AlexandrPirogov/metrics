@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"log"
+	"sync"
 
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel/tuples"
@@ -26,6 +27,7 @@ func NewJournal() Journal {
 		ReadInterval: read,
 		Restored:     map[string]tuples.Tupler{},
 		Channel:      make(chan []byte),
+		mux:          &sync.RWMutex{},
 	}
 }
 
@@ -37,6 +39,7 @@ type Journal struct {
 	ReadInterval int
 	Restored     map[string]tuples.Tupler
 	Channel      chan []byte
+	mux          *sync.RWMutex
 }
 
 // Start make journal stats writing data to the given file in json format
@@ -73,6 +76,8 @@ func (j Journal) writeDelayed(file *os.File) {
 	defer file.Close()
 	writer := bufio.NewWriter(file)
 	read := time.NewTicker(time.Second * time.Duration(j.ReadInterval))
+	j.mux.Lock()
+	defer j.mux.Unlock()
 	for {
 		<-read.C
 		for {
@@ -94,6 +99,8 @@ func (j Journal) writeDelayed(file *os.File) {
 func (j Journal) writeSynch(file *os.File) {
 	defer file.Close()
 	writer := bufio.NewWriter(file)
+	j.mux.Lock()
+	defer j.mux.Unlock()
 	for {
 		if bytes, ok := <-j.Channel; ok {
 			writer.Write(append(bytes, '\n'))
@@ -129,7 +136,6 @@ func (j Journal) Restore() ([][]byte, error) {
 			break
 		}
 	}
-	log.Printf("restored bytes %s", bytes)
 	return bytes, nil
 }
 

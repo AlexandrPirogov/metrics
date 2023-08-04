@@ -79,6 +79,7 @@ func (d *DB) Start() {
 // If metric has type counter DB will contain last value of counter
 func (d *DB) restore(bytes [][]byte) {
 	for _, item := range bytes {
+
 		var metric metrics.Metrics
 		log.Printf("Unmarshaling %s", string(item))
 		if err := json.Unmarshal(item, &metric); err != nil {
