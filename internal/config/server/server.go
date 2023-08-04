@@ -105,7 +105,6 @@ func initEnv() {
 
 func initFlags() {
 
-
 	//rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json config")
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
