@@ -76,9 +76,9 @@ func group(r *chi.Mux, h MetricsHandler) {
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.GZIPer)
 		r.Use(middleware.AllowContentType("application/json"))
+		r.Post("/updates/", h.UpdatesHandlerJSON)
 		r.Post("/update/", h.UpdateHandlerJSON)
 		r.Post("/value/", h.RetrieveMetricJSON)
-		r.Post("/updates/", h.UpdatesHandlerJSON)
 	})
 
 	r.Get("/ping", h.PingHandler)

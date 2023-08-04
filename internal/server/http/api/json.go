@@ -114,7 +114,6 @@ func (d *DefaultHandler) UpdatesHandlerJSON(w http.ResponseWriter, r *http.Reque
 	}
 	go func() { d.replicate(newStates) }()
 	body = tuples.MarshalTupleList(newStates, []byte{})
-
 	w.WriteHeader(http.StatusOK)
 	if len(body) > 0 {
 		w.Write(body)

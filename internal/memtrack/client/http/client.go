@@ -59,24 +59,26 @@ func (c Client) Listen() {
 	}
 }
 
-func (c Client) sendCounter(url string, js []byte) {
+func (c Client) send(url string, js []byte) {
 	buffer := bytes.NewBuffer(js)
+	log.Printf("Sending :%s", buffer)
 	r, err := c.buildRequest(url, buffer)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	c.processRequest(r)
-}
+	resp, err := c.Client.Do(r)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	defer resp.Body.Close()
 
-func (c Client) sendGauges(url string, js []byte) {
-	buffer := bytes.NewBuffer(js)
-	r, err := c.buildRequest(url, buffer)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Println(err)
-		return
+		log.Printf("error while readall %v", err)
 	}
-	c.processRequest(r)
+	log.Printf("got: %s", string(body))
 }
 
 func (c Client) buildGauges(metric metrics.Metricable, gauges map[string]interface{}) []metrics.Metrics {
@@ -124,17 +126,7 @@ func (c Client) buildRequest(url string, body io.Reader) (*http.Request, error) 
 }
 
 func (c Client) processRequest(r *http.Request) {
-	resp, err := c.Client.Do(r)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	defer resp.Body.Close()
 
-	_, err = io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("error while readall %v", err)
-	}
 }
 
 func (c Client) work() {
@@ -158,14 +150,14 @@ func (c Client) buildSend(url string, m metrics.Metricable) {
 			log.Printf("%v", err)
 			return
 		}
-		c.sendCounter(url, js)
+		c.send(url, js)
 	case m.String() == "gauge":
 		js, err := c.buildMarshalGauges(m)
 		if err != nil {
 			log.Printf("%v", err)
 			return
 		}
-		c.sendGauges(url, js)
+		c.send(url, js)
 	}
 }
 
