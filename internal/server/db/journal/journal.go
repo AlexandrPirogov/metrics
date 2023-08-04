@@ -175,6 +175,6 @@ func (j Journal) openReadFile() (*os.File, error) {
 
 func (j Journal) Write(record []byte) {
 	j.mux.Lock()
+	defer j.mux.Unlock()
 	j.Channel <- record
-	j.mux.Unlock()
 }
