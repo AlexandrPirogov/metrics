@@ -83,7 +83,7 @@ func (j Journal) writeDelayed(file *os.File) {
 		<-read.C
 		for {
 			if bytes, ok := <-j.Channel; ok {
-				log.Println("writing %s", bytes)
+				log.Printf("writing %s", bytes)
 				writer.Write(append(bytes, '\n'))
 				writer.Flush()
 			} else {
@@ -106,7 +106,7 @@ func (j Journal) writeSynch(file *os.File) {
 	for {
 		j.rpl.Lock()
 		if bytes, ok := <-j.Channel; ok {
-			log.Println("writing %s", bytes)
+			log.Printf("writing %s", bytes)
 			writer.Write(append(bytes, '\n'))
 			writer.Flush()
 		} else {
