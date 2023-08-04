@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"memtracker/internal/config/agent"
 	"memtracker/internal/memtrack"
 	"os"
 	"os/signal"
@@ -10,7 +9,6 @@ import (
 )
 
 func main() {
-	agent.Exec()
 	go func() {
 		memtracker := memtrack.NewHTTPMemTracker()
 		log.Printf("Started agent on %s, poll: %d, report: %d", memtracker.Host, memtracker.PollInterval, memtracker.ReportInterval)
