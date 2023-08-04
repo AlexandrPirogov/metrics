@@ -135,13 +135,11 @@ func (j *Journal) Restore() ([][]byte, error) {
 	defer file.Close()
 	bytes := make([][]byte, 0)
 	reader := bufio.NewScanner(file)
-	reader.Split(bufio.ScanLines)
 	for {
 		if reader.Scan() {
 			j.mux.Lock()
-			log.Printf("restoring: %s", reader.Bytes())
-			bytes = append(bytes, reader.Bytes())
-			time.Sleep(time.Millisecond * 1)
+			bytes = append(bytes, []byte(reader.Text()))
+			//
 			j.mux.Unlock()
 		} else {
 			break
