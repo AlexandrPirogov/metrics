@@ -45,7 +45,6 @@ func (d *DefaultHandler) crypt(tupleList tuples.TupleList) tuples.TupleList {
 			val := tuples.ExtractFloat64Pointer("value", h)
 			gaugeHash := crypt.Hash(fmt.Sprintf("%s:gauge:%f", name, *val), server.ServerCfg.Hash)
 			h = h.SetField("hash", gaugeHash)
-			log.Printf("gauge hash: %s", tuples.ExtractString("hash", h))
 		}
 		res = res.Add(h)
 		tupleList = tupleList.Tail()

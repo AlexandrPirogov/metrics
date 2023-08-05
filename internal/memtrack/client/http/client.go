@@ -47,15 +47,21 @@ func NewClient() Client {
 	return c
 }
 
-func (c Client) Send(metrics []metrics.Metricable) {
-	for _, metric := range metrics {
-		c.channel <- metric
-	}
-}
-
+// Listen starts Client instance to work
 func (c Client) Listen() {
 	for i := 0; i < c.workers; i++ {
 		go c.work()
+	}
+}
+
+// Send sends metrics to the server
+//
+// Pre-cond: Listen() method should be called before Send
+//
+// Post-cond: metrics was send to the server
+func (c Client) Send(metrics []metrics.Metricable) {
+	for _, metric := range metrics {
+		c.channel <- metric
 	}
 }
 
@@ -66,17 +72,7 @@ func (c Client) send(url string, js []byte) {
 		log.Println(err)
 		return
 	}
-	resp, err := c.Client.Do(r)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	defer resp.Body.Close()
-
-	_, err = io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("error while readall %v", err)
-	}
+	c.processRequest(r)
 }
 
 func (c Client) buildGauges(metric metrics.Metricable, gauges map[string]interface{}) []metrics.Metrics {
@@ -124,7 +120,17 @@ func (c Client) buildRequest(url string, body io.Reader) (*http.Request, error) 
 }
 
 func (c Client) processRequest(r *http.Request) {
+	resp, err := c.Client.Do(r)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	defer resp.Body.Close()
 
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("error while readall %v", err)
+	}
 }
 
 func (c Client) work() {
