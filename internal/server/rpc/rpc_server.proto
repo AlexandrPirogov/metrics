@@ -6,6 +6,7 @@ package rpc;
 
 service MetricHandler {
     rpc UpdateGauges(stream Gauge) returns (google.protobuf.StringValue);
+    rpc UpdateCounters(stream Counter) returns (google.protobuf.StringValue);
 }
 
 message Gauge {

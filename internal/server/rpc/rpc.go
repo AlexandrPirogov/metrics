@@ -40,6 +40,12 @@ func (g *RPCServer) UpdateGauges(stream MetricHandler_UpdateGaugesServer) error 
 	}
 }
 
+func (g *RPCServer) UpdateCounters(stream MetricHandler_UpdateCountersServer) error {
+	for {
+		g.recieveCounters(stream)
+	}
+}
+
 func (g *RPCServer) recieveGauges(stream MetricHandler_UpdateGaugesServer) error {
 	gauge, err := stream.Recv()
 	if err == io.EOF {
@@ -58,11 +64,38 @@ func (g *RPCServer) recieveGauges(stream MetricHandler_UpdateGaugesServer) error
 	return nil
 }
 
+func (g *RPCServer) recieveCounters(stream MetricHandler_UpdateCountersServer) error {
+	counter, err := stream.Recv()
+	if err == io.EOF {
+		return stream.SendAndClose(
+			&wrappers.StringValue{Value: "Processed counters "})
+	}
+
+	if err != nil {
+		return stream.SendAndClose(
+			&wrappers.StringValue{Value: "Counters processed " + fmt.Sprint(err)})
+	}
+
+	tupl := counter.ToTuple()
+	log.Println(tupl)
+	kernel.Write(g.Storer.Storage, tuples.TupleList{}.Add(tupl))
+	return nil
+}
+
 func (g Gauge) ToTuple() tuples.Tupler {
 	res := tuples.NewTuple()
 	res.SetField("name", g.Id)
 	res.SetField("type", g.Type)
 	res.SetField("hash", crypt.Hash(fmt.Sprintf("%s:gauge:%f", g.Id, g.Value), server.ServerCfg.Hash))
-	res.SetField("delta", g.Value)
+	res.SetField("value", &g.Value)
+	return res
+}
+
+func (c Counter) ToTuple() tuples.Tupler {
+	res := tuples.NewTuple()
+	res.SetField("name", c.Id)
+	res.SetField("type", c.Type)
+	res.SetField("hash", crypt.Hash(fmt.Sprintf("%s:counter:%d", c.Id, c.Delta), server.ServerCfg.Hash))
+	res.SetField("value", &c.Delta)
 	return res
 }

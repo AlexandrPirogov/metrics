@@ -1,9 +1,9 @@
+// postgres handle read and writes operations to postgres storage
 package postgres
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel/tuples"
@@ -11,88 +11,45 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewPg() *Postgres {
-	return &Postgres{
+type readActionByType map[string]func(*postgres, string) (tuples.TupleList, error)
+type writeActionByType map[string]func(*postgres, tuples.Tupler) (tuples.TupleList, error)
+
+var readAllMetrics func(p *postgres, mname string) (tuples.TupleList, error) = func(p *postgres, mname string) (tuples.TupleList, error) {
+	gauges, _ := readGauges(p, mname)
+	counters, nil := readCounters(p, mname)
+	gauges = gauges.Merge(counters)
+	return gauges, nil
+}
+
+var readByType readActionByType = readActionByType{
+	"gauge":   readGauges,
+	"counter": readCounters,
+	"*":       readAllMetrics,
+}
+
+var writeByType writeActionByType = writeActionByType{
+	"gauge":   writeGauges,
+	"counter": writeCounters,
+}
+
+// NewPg returnes new instance of *postgres
+func NewPg() *postgres {
+	return &postgres{
 		conn: connection(),
 	}
 }
 
-type Postgres struct {
-	conn *pgx.Conn
+type postgres struct {
+	conn *pgxpool.Pool
 }
 
-// Write writes given tuple to Database
+// Ping checks for connection with DB
 //
-// Pre-cond: given tuple to write
-//
-// Post-cond: depends on sucsess
-// If success then state was written to database and returned written tuple and error = nil
-// Otherwise returns nil and error
-func (p *Postgres) Write(states tuples.TupleList) (tuples.TupleList, error) {
-	return p.recWrite(states, tuples.TupleList{})
-}
-
-func (p *Postgres) recWrite(tail tuples.TupleList, acc tuples.TupleList) (tuples.TupleList, error) {
-	if !tail.Next() {
-		return acc, nil
-	}
-
-	head, tail := tail.HeadTail()
-	written, err := p.writeMetric(head)
-	if err != nil {
-		return tuples.TupleList{}, err
-	}
-	return p.recWrite(tail, acc.Merge(written))
-}
-
-func (p *Postgres) writeMetric(state tuples.Tupler) (tuples.TupleList, error) {
-	written := tuples.TupleList{}
-	mtype := tuples.ExtractString("type", state)
-	switch mtype {
-	case "gauge":
-		res, err := p.WriteGauges(state)
-		if err != nil {
-			return tuples.TupleList{}, err
-		}
-		written = written.Merge(res)
-	case "counter":
-		res, err := p.WriteCounters(state)
-		if err != nil {
-			return tuples.TupleList{}, err
-		}
-		written = written.Merge(res)
-	}
-	return written, nil
-}
-
-// Read reads tuples from database by given query
-//
-// Pre-cond: given query tuple
-// Post-cond: return tuples that satisfies given query
-func (p *Postgres) Read(state tuples.Tupler) (tuples.TupleList, error) {
-	mname := tuples.ExtractString("name", state)
-	mtype := tuples.ExtractString("type", state)
-
-	switch mtype {
-	case "gauge":
-		res, _ := p.ReadGauges(mname)
-		return res, nil
-	case "counter":
-		res, _ := p.ReadCounters(mname)
-		return res, nil
-	case "*":
-		gauges, _ := p.ReadGauges(mname)
-		counters, nil := p.ReadCounters(mname)
-		gauges = gauges.Merge(counters)
-		return gauges, nil
-	default:
-		return tuples.TupleList{}, nil
-	}
-}
-
-func (p *Postgres) Ping() error {
+// Post-cond: if connection is establish -- nil returned
+func (p *postgres) Ping() error {
 	if p.conn == nil {
 		return errors.New("connection is nil")
 	}
@@ -104,119 +61,31 @@ func (p *Postgres) Ping() error {
 	return nil
 }
 
-func (p *Postgres) ReadGauges(cond string) (tuples.TupleList, error) {
-	query := fmt.Sprintf("SELECT * from READ_METRIC('gauge', '%s')", cond)
-	rows, err := p.conn.Query(context.Background(), query)
-	if err != nil {
-		return tuples.TupleList{}, err
-	}
+// Read reads tuples from database by given query
+//
+// Pre-cond: given query tuple
+// Post-cond: return tuples that satisfies given query
+func (p *postgres) Read(state tuples.Tupler) (tuples.TupleList, error) {
+	mname, mtype := tuples.ExtractString("name", state), tuples.ExtractString("type", state)
 
-	defer rows.Close()
-
-	var res = tuples.TupleList{}
-	for rows.Next() {
-		var toScan metrics.GaugeState
-		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
-		if err != nil {
-			return tuples.TupleList{}, err
-		}
-		res = res.Add(toScan)
-	}
-	return res, nil
+	read := readByType[mtype]
+	return read(p, mname)
 }
 
-func (p *Postgres) ReadCounters(cond string) (tuples.TupleList, error) {
-	query := fmt.Sprintf("SELECT * FROM READ_METRIC('counter', '%s')", cond)
-	rows, err := p.conn.Query(context.Background(), query)
-	if err != nil {
-		return tuples.TupleList{}, err
-	}
-	defer rows.Close()
-
-	var res = tuples.TupleList{}
-
-	for rows.Next() {
-		var toScan metrics.CounterState
-		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
-		if err != nil {
-			return tuples.TupleList{}, err
-		}
-		res = res.Add(toScan)
-	}
-	return res, nil
+// Write writes given tuple to Database
+//
+// Pre-cond: given tuple to write
+//
+// Post-cond: depends on sucsess
+// If success then state was written to database and returned written tuple and error = nil
+// Otherwise returns nil and error
+func (p *postgres) Write(states tuples.TupleList) (tuples.TupleList, error) {
+	return p.recWrite(states, tuples.TupleList{})
 }
 
-func (p *Postgres) ReadMetrics() (tuples.TupleList, error) {
-	query := "SELECT * FROM READ_METRICS()"
-	rows, err := p.conn.Query(context.Background(), query)
-	if err != nil {
-		return tuples.TupleList{}, err
-	}
-
+func (p *postgres) assembleCounterState(rows pgx.Rows) (tuples.TupleList, error) {
 	defer rows.Close()
-
-	var res = tuples.TupleList{}
-
-	for rows.Next() {
-		var toScan metrics.CounterState
-		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
-		if err != nil {
-			return tuples.TupleList{}, err
-		}
-		res = res.Add(toScan)
-	}
-	return res, nil
-}
-
-func (p *Postgres) WriteGauges(state tuples.Tupler) (tuples.TupleList, error) {
-	val := tuples.ExtractFloat64Pointer("value", state)
-	if val == nil {
-		return tuples.TupleList{}, errors.New("value must exists while writing")
-	}
-
-	mname := tuples.ExtractString("name", state)
-	mtype := tuples.ExtractString("type", state)
-	rows, err := p.conn.Query(context.Background(),
-		"SELECT * FROM WRITE_METRIC($1::varchar(255), $2::varchar(255), $3::double precision)", mtype, mname, *val)
-	if err != nil {
-		return tuples.TupleList{}, err
-	}
-
-	defer rows.Close()
-
-	var res = tuples.TupleList{}
-	for rows.Next() {
-		var toScan metrics.GaugeState
-		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
-		if err != nil {
-			return tuples.TupleList{}, err
-		}
-		res = res.Add(toScan)
-	}
-	return res, nil
-}
-
-func (p *Postgres) WriteCounters(state tuples.Tupler) (tuples.TupleList, error) {
-
-	val := tuples.ExtractInt64Pointer("value", state)
-	if val == nil {
-		return tuples.TupleList{}, errors.New("value must exists while writing")
-	}
-
-	mname := tuples.ExtractString("name", state)
-	mtype := tuples.ExtractString("type", state)
-	log.Printf("writing counter\n")
-	rows, err := p.conn.Query(context.Background(),
-		"SELECT * FROM WRITE_METRIC($1::varchar(255), $2::varchar(255), $3::double precision)", mtype, mname, *val)
-	if err != nil {
-		log.Printf("err counter %v", err)
-		return tuples.TupleList{}, err
-	}
-
-	defer rows.Close()
-
-	var res = tuples.TupleList{}
-
+	res := tuples.TupleList{}
 	for rows.Next() {
 		var toScan metrics.CounterState
 		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
@@ -229,19 +98,33 @@ func (p *Postgres) WriteCounters(state tuples.Tupler) (tuples.TupleList, error) 
 	return res, nil
 }
 
-func connection() *pgx.Conn {
+func (p *postgres) assembleGaugeState(rows pgx.Rows) (tuples.TupleList, error) {
+	defer rows.Close()
+	res := tuples.TupleList{}
+	for rows.Next() {
+		var toScan metrics.GaugeState
+		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
+		if err != nil {
+			return tuples.TupleList{}, err
+		}
+		res = res.Add(toScan)
+	}
+	return res, nil
+}
+
+func connection() *pgxpool.Pool {
 	PgURL := server.ServerCfg.DBUrl
 	log.Printf("Url:%s", PgURL)
-	conn, err := pgx.Connect(context.Background(), PgURL)
+	conn, err := pgxpool.New(context.Background(), PgURL)
 	if err != nil {
 		log.Printf("conn err :%v", err)
 		return nil
 	}
-	Migrate(conn)
+	migrate(conn)
 	return conn
 }
 
-func Migrate(c *pgx.Conn) {
+func migrate(c *pgxpool.Pool) {
 	// #TODO it must be const
 	path := "internal/server/db/storage/sql/postgres/init.sql"
 	body, err := os.ReadFile(path)
@@ -254,4 +137,84 @@ func Migrate(c *pgx.Conn) {
 	if err != nil {
 		log.Printf("Error while migrate%v", err)
 	}
+}
+
+func (p *postgres) recWrite(tail tuples.TupleList, acc tuples.TupleList) (tuples.TupleList, error) {
+	if !tail.Next() {
+		return acc, nil
+	}
+
+	head, tail := tail.HeadTail()
+	written, err := p.writeMetric(head)
+	if err != nil {
+		return tuples.TupleList{}, err
+	}
+	return p.recWrite(tail, acc.Merge(written))
+}
+
+func (p *postgres) writeMetric(state tuples.Tupler) (tuples.TupleList, error) {
+	mtype := tuples.ExtractString("type", state)
+	writeAction := writeByType[mtype]
+	return writeAction(p, state)
+}
+
+func readGauges(p *postgres, cond string) (tuples.TupleList, error) {
+	rows, err := p.conn.Query(context.Background(), READ_METRIC, "gauge", cond)
+	if err != nil {
+		return tuples.TupleList{}, err
+	}
+
+	defer rows.Close()
+
+	var res = tuples.TupleList{}
+	for rows.Next() {
+		var toScan metrics.GaugeState
+		err := rows.Scan(&toScan.Name, &toScan.Type, &toScan.Value)
+		if err != nil {
+			return tuples.TupleList{}, err
+		}
+		res = res.Add(toScan)
+	}
+	return res, nil
+}
+
+func readCounters(p *postgres, cond string) (tuples.TupleList, error) {
+	rows, err := p.conn.Query(context.Background(), READ_METRIC, "counter", cond)
+	if err != nil {
+		return tuples.TupleList{}, err
+	}
+
+	return p.assembleCounterState(rows)
+}
+
+func writeGauges(p *postgres, state tuples.Tupler) (tuples.TupleList, error) {
+	val := tuples.ExtractFloat64Pointer("value", state)
+	if val == nil {
+		return tuples.TupleList{}, errors.New("value must exists while writing")
+	}
+
+	mname := tuples.ExtractString("name", state)
+	mtype := tuples.ExtractString("type", state)
+	rows, err := p.conn.Query(context.Background(), WRITE_METRIC, mtype, mname, *val)
+	if err != nil {
+		return tuples.TupleList{}, err
+	}
+
+	return p.assembleGaugeState(rows)
+}
+
+func writeCounters(p *postgres, state tuples.Tupler) (tuples.TupleList, error) {
+	val := tuples.ExtractInt64Pointer("value", state)
+	if val == nil {
+		return tuples.TupleList{}, errors.New("value must exists while writing")
+	}
+	mname := tuples.ExtractString("name", state)
+	mtype := tuples.ExtractString("type", state)
+	rows, err := p.conn.Query(context.Background(), WRITE_METRIC, mtype, mname, *val)
+	if err != nil {
+		log.Printf("err counter %v", err)
+		return tuples.TupleList{}, err
+	}
+
+	return p.assembleCounterState(rows)
 }
