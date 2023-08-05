@@ -32,7 +32,6 @@ func (d *DefaultHandler) RetrieveMetricJSON(w http.ResponseWriter, r *http.Reque
 
 	metricState := metric.ToTuple()
 	body, status := d.processRetrieve(metricState)
-	log.Printf("status %d, body: %s", status, body)
 	w.WriteHeader(status)
 	if len(body) > 0 {
 		w.Write(body)
@@ -145,7 +144,6 @@ func (d *DefaultHandler) verifyCounterHash(m metrics.Metrics) error {
 	}
 
 	check := crypt.Hash(fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta), key)
-	log.Printf("check%s\n m.Hash: %s\n", check, m.Hash)
 	if m.Hash != check {
 		return errors.New("hash are not equals")
 	}

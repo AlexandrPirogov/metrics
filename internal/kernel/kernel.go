@@ -24,10 +24,10 @@ type Storer interface {
 // Post-cond: if was written successfully returns NewTuple state and error nil
 // Otherwise returns emtyTuple and error
 func Write(s Storer, states tuples.TupleList) (tuples.TupleList, error) {
+	log.Printf("Writing %v", states)
 	newStates, err := s.Write(states)
-
+	log.Printf("Wrote %v, %v", states, err)
 	if err != nil {
-		log.Printf("err while writing state %v", err)
 		return tuples.TupleList{}, err
 	}
 
@@ -35,9 +35,10 @@ func Write(s Storer, states tuples.TupleList) (tuples.TupleList, error) {
 }
 
 func Read(s Storer, state tuples.Tupler) (tuples.TupleList, error) {
+	log.Printf("Reading %v", state)
 	states, err := s.Read(state)
+	log.Printf("Read %v, %v", states, err)
 	if err != nil {
-		log.Printf("err while reading state %v", err)
 		return tuples.TupleList{}, err
 	}
 
