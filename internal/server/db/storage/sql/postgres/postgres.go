@@ -159,7 +159,7 @@ func (p *postgres) writeMetric(state tuples.Tupler) (tuples.TupleList, error) {
 }
 
 func readGauges(p *postgres, cond string) (tuples.TupleList, error) {
-	rows, err := p.conn.Query(context.Background(), READ_METRIC, "gauge", cond)
+	rows, err := p.conn.Query(context.Background(), ReadMetric, "gauge", cond)
 	if err != nil {
 		return tuples.TupleList{}, err
 	}
@@ -179,7 +179,7 @@ func readGauges(p *postgres, cond string) (tuples.TupleList, error) {
 }
 
 func readCounters(p *postgres, cond string) (tuples.TupleList, error) {
-	rows, err := p.conn.Query(context.Background(), READ_METRIC, "counter", cond)
+	rows, err := p.conn.Query(context.Background(), ReadMetric, "counter", cond)
 	if err != nil {
 		return tuples.TupleList{}, err
 	}
@@ -188,14 +188,21 @@ func readCounters(p *postgres, cond string) (tuples.TupleList, error) {
 }
 
 func writeGauges(p *postgres, state tuples.Tupler) (tuples.TupleList, error) {
-	val := tuples.ExtractFloat64Pointer("value", state)
-	if val == nil {
-		return tuples.TupleList{}, errors.New("value must exists while writing")
+	var val *float64
+	var mname, mtype string
+
+	// You can expose/fold brackets for better code reading
+	{
+		val = tuples.ExtractFloat64Pointer("value", state)
+		if val == nil {
+			return tuples.TupleList{}, errors.New("value must exists while writing")
+		}
+
+		mname = tuples.ExtractString("name", state)
+		mtype = tuples.ExtractString("type", state)
 	}
 
-	mname := tuples.ExtractString("name", state)
-	mtype := tuples.ExtractString("type", state)
-	rows, err := p.conn.Query(context.Background(), WRITE_METRIC, mtype, mname, *val)
+	rows, err := p.conn.Query(context.Background(), WriteMetric, mtype, mname, *val)
 	if err != nil {
 		return tuples.TupleList{}, err
 	}
@@ -204,13 +211,20 @@ func writeGauges(p *postgres, state tuples.Tupler) (tuples.TupleList, error) {
 }
 
 func writeCounters(p *postgres, state tuples.Tupler) (tuples.TupleList, error) {
-	val := tuples.ExtractInt64Pointer("value", state)
-	if val == nil {
-		return tuples.TupleList{}, errors.New("value must exists while writing")
+	var val *int64
+	var mname, mtype string
+
+	// You can expose/fold brackets for better code reading
+	{
+		val = tuples.ExtractInt64Pointer("value", state)
+		if val == nil {
+			return tuples.TupleList{}, errors.New("value must exists while writing")
+		}
+		mname = tuples.ExtractString("name", state)
+		mtype = tuples.ExtractString("type", state)
 	}
-	mname := tuples.ExtractString("name", state)
-	mtype := tuples.ExtractString("type", state)
-	rows, err := p.conn.Query(context.Background(), WRITE_METRIC, mtype, mname, *val)
+
+	rows, err := p.conn.Query(context.Background(), WriteMetric, mtype, mname, *val)
 	if err != nil {
 		log.Printf("err counter %v", err)
 		return tuples.TupleList{}, err
