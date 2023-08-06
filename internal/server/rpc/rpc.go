@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	fmt "fmt"
 	"io"
 	"log"
@@ -11,10 +12,13 @@ import (
 	"memtracker/internal/kernel"
 	"memtracker/internal/kernel/tuples"
 	"memtracker/internal/server/db"
+	"memtracker/internal/server/verifier"
 	"net"
 
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc"
+	_ "google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/metadata"
 )
 
 type RPCServer struct {
@@ -24,8 +28,8 @@ type RPCServer struct {
 func (g *RPCServer) ListenAndServe() error {
 	listener, err := net.Listen("tcp", server.ServerCfg.Address)
 	function.ErrFatalCheck("can't start rpc server", err)
-
 	s := grpc.NewServer()
+
 	RegisterMetricHandlerServer(s, g)
 	return s.Serve(listener)
 }
@@ -35,9 +39,17 @@ func (g *RPCServer) Shutdown(ctx context.Context) error {
 }
 
 func (g *RPCServer) UpdateGauges(stream MetricHandler_UpdateGaugesServer) error {
-	for {
-		g.recieveGauges(stream)
+	md, ok := metadata.FromIncomingContext(stream.Context())
+
+	if !verifier.IsContainerSubnetGRPC(md) {
+		log.Println("subnet not allowed")
+		return errors.New("asd")
 	}
+	var err error
+	for ok {
+		err = g.recieveGauges(stream)
+	}
+	return err
 }
 
 func (g *RPCServer) UpdateCounters(stream MetricHandler_UpdateCountersServer) error {

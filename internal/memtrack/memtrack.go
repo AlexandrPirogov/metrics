@@ -15,7 +15,6 @@ import (
 )
 
 type ClientNet interface {
-	Listen()
 	Send(metrics []metrics.Metricable)
 }
 
@@ -101,7 +100,6 @@ func NewHTTPMemTracker() httpMemTracker {
 
 	client := clientType[agent.ClientCfg.RPC]()
 	log.Printf("Client is %v", client)
-	go client.Listen()
 	return httpMemTracker{
 		PollInterval:   poll,
 		ReportInterval: report,

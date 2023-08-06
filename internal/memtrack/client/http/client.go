@@ -43,12 +43,12 @@ func NewClient() Client {
 		workers: wrksCnt,
 		channel: make(chan metrics.Metricable, wrksCnt),
 	}
-
+	go c.listen()
 	return c
 }
 
-// Listen starts Client instance to work
-func (c Client) Listen() {
+// listen starts Client instance to work
+func (c Client) listen() {
 	for i := 0; i < c.workers; i++ {
 		go c.work()
 	}
@@ -56,7 +56,7 @@ func (c Client) Listen() {
 
 // Send sends metrics to the server
 //
-// Pre-cond: Listen() method should be called before Send
+// Pre-cond: listen() method should be called before Send
 //
 // Post-cond: metrics was send to the server
 func (c Client) Send(metrics []metrics.Metricable) {

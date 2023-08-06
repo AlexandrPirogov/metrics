@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"context"
+	context "context"
 	fmt "fmt"
 	"log"
 	"memtracker/internal/config/agent"
@@ -9,8 +9,16 @@ import (
 	"memtracker/internal/function"
 	"memtracker/internal/metrics"
 
+	"github.com/net-byte/go-gateway"
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/metadata"
 )
+
+var buildAndSendByType map[string]func(RPCClient, metrics.Metricable) = map[string]func(RPCClient, metrics.Metricable){
+	"gauge":   buildAndSendGauges,
+	"counter": buildAndSendCounters,
+}
 
 type RPCClient struct {
 	workers       int
@@ -24,10 +32,16 @@ func New() RPCClient {
 	function.ErrFatalCheck("can't connect via RPC to server: ", err)
 
 	clientConn := NewMetricHandlerClient(conn)
-	gstream, err := clientConn.UpdateGauges(context.Background())
-	cstream, err := clientConn.UpdateCounters(context.Background())
-	function.ErrFatalCheck("can't establish stream: ", err)
 
+	ip, _ := gateway.DiscoverGatewayIPv4()
+	md := metadata.Pairs("X-Real-IP", ip.String())
+	gctx := metadata.NewOutgoingContext(context.Background(), md)
+	gstream, err := clientConn.UpdateGauges(gctx)
+
+	cstream, err := clientConn.UpdateCounters(gctx)
+
+	function.ErrFatalCheck("can't establish stream: ", err)
+	grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name))
 	return RPCClient{
 		gaugeStream:   gstream,
 		counterStream: cstream,
@@ -37,22 +51,22 @@ func New() RPCClient {
 
 func (r RPCClient) Send(metrics []metrics.Metricable) {
 	for _, m := range metrics {
-		if m.String() == "gauge" {
-			gauges := buildMessageGauges("gauge", m.AsMap())
-			for _, g := range gauges {
-				r.AddInStreamGauge(&g, r.gaugeStream)
-			}
-		} else {
-			counters := buildMessageCounters("counter", m.AsMap())
-			for _, c := range counters {
-				r.AddInStreamCounter(&c, r.counterStream)
-			}
-		}
+		buildAndSendByType[m.String()](r, m)
 	}
 }
 
-func (r RPCClient) Listen() {
+func buildAndSendGauges(r RPCClient, m metrics.Metricable) {
+	gauges := buildMessageGauges("gauge", m.AsMap())
+	for _, g := range gauges {
+		r.AddInStreamGauge(&g, r.gaugeStream)
+	}
+}
 
+func buildAndSendCounters(r RPCClient, m metrics.Metricable) {
+	counters := buildMessageCounters("counter", m.AsMap())
+	for _, c := range counters {
+		r.AddInStreamCounter(&c, r.counterStream)
+	}
 }
 
 func buildMessageCounters(typ string, counters map[string]interface{}) []Counter {
