@@ -24,6 +24,7 @@ const (
 	DefaultCryptoKey     = ""
 	DefaultCfgFile       = "/tmp/devops-metrics-db.json"
 	DefaultRestore       = true
+	DefaultSubnet        = ""
 )
 
 // commands
@@ -40,12 +41,15 @@ var (
 var (
 	address       string // agent & server addr
 	cfgFile       string // path to config json file
+	dbURL         string // url connection for postgres
+	hash          string // key for hashing
 	storeInterval string // period of replication
 	storeFile     string // file where replication is goint to be written
-	hash          string // key for hashing
-	dbURL         string // url connection for postgres
+	subnet        string //subneting
 
 	restore bool // Should db be restored
+	rpc     bool //will the server use rpc
+
 )
 
 // Configs
@@ -60,6 +64,8 @@ type ServerConfig struct {
 	DBUrl     string `env:"DATABASE_DSN" json:"database_dsn"`
 	CryptoKey string `env:"CRYPTO_KEY" json:"crypto_key"`
 	Run       func(serv *http.Server) error
+	Subnet    string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
+	RPC       bool   `env:"RPC" envDefault:"false" json:"rpc"`
 }
 
 type JournalConfig struct {
@@ -99,24 +105,30 @@ func initEnv() {
 
 func initFlags() {
 
-	log.Printf("server cfg from env: %v", ServerCfg)
-	log.Printf("jounrla cfg from env: %v", JournalCfg)
-
+	//rootServerCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json config")
 	rootServerCmd.PersistentFlags().StringVarP(&storeInterval, "interval", "i", DefaultStoreInterval, "Interval of replication")
 	rootServerCmd.PersistentFlags().StringVarP(&storeFile, "file", "f", DefaultFileStore, "File to replicate")
 	rootServerCmd.PersistentFlags().BoolVarP(&restore, "restore", "r", DefaultRestore, "Should restore DB")
 	rootServerCmd.PersistentFlags().StringVarP(&address, "address", "a", DefaultHost, "ADDRESS OF SERVER. Default value: localhost:8080")
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
 	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
+	rootServerCmd.PersistentFlags().StringVarP(&subnet, "subnet", "t", "", "trusted subnet")
+	rootServerCmd.PersistentFlags().BoolVarP(&rpc, "rpc", "s", false, "set true if you want to use rpc")
 
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
+
+	if rpc {
+		ServerCfg.RPC = true
+	}
+
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ServerCfg.Hash = hash })
 	f.CompareStringsDo(storeInterval, DefaultStoreInterval, func() { JournalCfg.ReadInterval = storeInterval })
 	f.CompareStringsDo(storeFile, DefaultFileStore, func() { JournalCfg.StoreFile = storeFile })
+	f.CompareStringsDo(subnet, DefaultSubnet, func() { ServerCfg.Subnet = subnet })
 
 	if ServerCfg.DBUrl == DefaultDBURL {
 		ServerCfg.DBUrl = dbURL
@@ -134,7 +146,7 @@ func initFlags() {
 		}
 	}
 	log.Printf("server cfg from flags: %v", ServerCfg)
-	log.Printf("jounrla cfg from flasg: %v", JournalCfg)
+	log.Printf("jounra cfg from flasg: %v", JournalCfg)
 }
 
 func readConfigFile(path string) {

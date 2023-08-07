@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+
+package rpc;
+
+service MetricHandler {
+    rpc UpdateGauges(stream Gauge) returns (google.protobuf.StringValue);
+    rpc UpdateCounters(stream Counter) returns (google.protobuf.StringValue);
+}
+
+
+message Gauge {
+    string id = 1;
+    string type = 2;
+    double value = 3;
+    string hash = 4;
+}
+
+message Counter {
+    string id = 1;
+    string type = 2;
+    int64 delta = 3;
+    string hash = 4;
+}

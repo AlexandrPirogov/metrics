@@ -5,11 +5,34 @@ package memtrack
 import (
 	"log"
 	"memtracker/internal/config/agent"
-	"memtracker/internal/memtrack/http/client"
+	"memtracker/internal/function"
+	"memtracker/internal/memtrack/client/http"
+	"memtracker/internal/memtrack/client/rpc"
 	"memtracker/internal/memtrack/trackers"
+	"memtracker/internal/metrics"
 	"strconv"
 	"time"
 )
+
+type ClientNet interface {
+	Send(metrics []metrics.Metricable)
+}
+
+// clientType for different types of server.
+var clientType map[bool]func() ClientNet = map[bool]func() ClientNet{
+	true:  newRPC,
+	false: newHTTP,
+}
+
+// newRPC returns new instance of RPC server
+func newRPC() ClientNet {
+	return rpc.New()
+}
+
+// newHTTP returns new instance of RPC server
+func newHTTP() ClientNet {
+	return http.NewClient()
+}
 
 // Collects all types of metrics
 // Reads and updates metrics
@@ -22,7 +45,7 @@ type httpMemTracker struct {
 	Host           string
 	PollInterval   int
 	ReportInterval int
-	client         client.Client
+	client         ClientNet
 	memtracker
 }
 
@@ -66,20 +89,18 @@ func (h httpMemTracker) update() {
 func NewHTTPMemTracker() httpMemTracker {
 	cfg := agent.ClientCfg
 	pollInterval := cfg.PollInterval[:len(cfg.PollInterval)-1]
-	poll, err := strconv.Atoi(string(pollInterval))
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-	reportInterval := cfg.ReportInterval[:len(cfg.ReportInterval)-1]
-	report, err := strconv.Atoi(string(reportInterval))
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
 
-	client := client.NewClient(cfg.Address, "application/json")
-	go client.Listen()
+	poll, err := strconv.Atoi(string(pollInterval))
+	function.ErrFatalCheck("", err)
+
+	reportInterval := cfg.ReportInterval[:len(cfg.ReportInterval)-1]
+
+	report, err := strconv.Atoi(string(reportInterval))
+	function.ErrFatalCheck("", err)
+
+	client := clientType[agent.ClientCfg.RPC]()
+	log.Printf("Client is %v", client)
 	return httpMemTracker{
-		Host:           cfg.Address,
 		PollInterval:   poll,
 		ReportInterval: report,
 		memtracker:     memtracker{trackers.New()},

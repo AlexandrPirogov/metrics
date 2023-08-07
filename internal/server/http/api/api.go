@@ -6,13 +6,10 @@ import (
 	"fmt"
 	"log"
 
-	"memtracker/internal/config/server"
 	"memtracker/internal/kernel"
 	"memtracker/internal/kernel/tuples"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 	"memtracker/internal/server/db"
-	"memtracker/internal/server/db/journal"
-	"memtracker/internal/server/db/storage/sql/postgres"
 	"net/http"
 	"strconv"
 
@@ -20,23 +17,8 @@ import (
 )
 
 func NewHandler() *DefaultHandler {
-	if server.ServerCfg.DBUrl != "" {
-		pg := postgres.NewPg()
-		log.Printf("Using postgres as DB")
-		return &DefaultHandler{
-			DB: db.DB{
-				Storage:   pg,
-				Journaler: journal.NewJournal(),
-			},
-		}
-	}
-
-	log.Printf("Using local ram as DB")
 	return &DefaultHandler{
-		DB: db.DB{
-			Storage:   db.MemStorageDB(),
-			Journaler: journal.NewJournal(),
-		},
+		DB: db.GetStorer(),
 	}
 
 }
@@ -87,6 +69,7 @@ func (d *DefaultHandler) RetrieveMetric(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	
 	for res.Next() {
 		t := res.Head()
 		if mtype == "gauge" {

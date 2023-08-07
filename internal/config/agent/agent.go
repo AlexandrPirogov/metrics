@@ -31,9 +31,9 @@ var (
 	cfgFile        string // path to config json file
 	reportInterval string // how often agent will sends metrics to server
 	pollInterval   string // how often agent will updates metrics
-	hash           string //hash for metric
-	limit          int    //rate limit for agent to send requests
-
+	hash           string // hash for metric
+	limit          int    // rate limit for agent to send requests
+	rpc            bool   // is client using rpc
 )
 
 // Configs
@@ -41,19 +41,9 @@ var (
 	ClientCfg = &ClientConfig{} // Config for agent
 )
 
-type ClientConfig struct {
-	Address        string   `env:"ADDRESS" envDefault:"localhost:8080" json:"address"`
-	ReportInterval Interval `env:"REPORT_INTERVAL" envDefault:"10s" json:"report_interval"`
-	PollInterval   Interval `env:"POLL_INTERVAL" envDefault:"2s" json:"poll_interval"`
-	Hash           string   `env:"KEY"`
-	Limit          int      `env:"RATE_LIMIT" envDefault:"1"`
-	CryptoKey      string   `env:"CRYPTO_KEY" json:"crypto_key"`
-	TransportCfg   *http.Transport
-}
-
+// Functions for TLS configure
 var (
 	assignNonTLS = func() {
-		ClientCfg.Address = "http://" + ClientCfg.Address
 		ClientCfg.TransportCfg = &http.Transport{}
 	}
 	assignTLS = func() {
@@ -64,13 +54,23 @@ var (
 					Certificates:       []tls.Certificate{crt},
 				},
 			}
-			ClientCfg.Address = "https://" + ClientCfg.Address
 			return
 		}
-		ClientCfg.Address = "http://" + ClientCfg.Address
 		ClientCfg.TransportCfg = &http.Transport{}
 	}
 )
+
+type ClientConfig struct {
+	Address        string   `env:"ADDRESS" envDefault:"localhost:8080" json:"address"`
+	CryptoKey      string   `env:"CRYPTO_KEY" json:"crypto_key"`
+	Hash           string   `env:"KEY"`
+	Limit          int      `env:"RATE_LIMIT" envDefault:"1"`
+	PollInterval   Interval `env:"POLL_INTERVAL" envDefault:"2s" json:"poll_interval"`
+	ReportInterval Interval `env:"REPORT_INTERVAL" envDefault:"10s" json:"report_interval"`
+	RPC            bool     `env:"RPC" envDefault:"false" json:"rpc"`
+	TransportCfg   *http.Transport
+	Protocol       string
+}
 
 func Exec() {
 	initEnv()
@@ -91,6 +91,7 @@ func initFlags() {
 	rootClientCmd.PersistentFlags().StringVarP(&pollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
 	rootClientCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to server")
 	rootClientCmd.PersistentFlags().IntVarP(&limit, "limit", "l", 1, "rps limit to send requests")
+	rootClientCmd.PersistentFlags().BoolVarP(&rpc, "rpc", "s", false, "set true if you want to use rpc")
 
 	err := rootClientCmd.Execute()
 	f.ErrFatalCheck("", err)
@@ -99,8 +100,25 @@ func initFlags() {
 	f.CompareStringsDo(address, "", func() { ClientCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ClientCfg.Hash = hash })
 	f.CompareStringsDo(ClientCfg.CryptoKey, "", func() {})
+
+	f.CompareStringsDoOthewise(pollInterval, "",
+		func() { ClientCfg.PollInterval = Interval(pollInterval) },
+		func() { ClientCfg.PollInterval = "2s" })
+
+	f.CompareStringsDoOthewise(reportInterval, "",
+		func() { ClientCfg.ReportInterval = Interval(reportInterval) },
+		func() { ClientCfg.ReportInterval = "10s" })
+
 	f.CompareIntsDo(limit, 1, func() { ClientCfg.Limit = limit })
-	f.CompareStringsDoOthewise(cfgFile, "", assignTLS, assignNonTLS)
+
+	if rpc {
+		ClientCfg.RPC = true
+	}
+	if !rpc {
+		f.CompareStringsDoOthewise(cfgFile, "", assignTLS, assignNonTLS)
+		f.CompareStringsDoOthewise(cfgFile, "", func() { ClientCfg.Protocol = "https://" }, func() { ClientCfg.Protocol = "http://" })
+	}
+	log.Printf("Agent config: %v", ClientCfg)
 }
 
 func certTemplate(clientKet string) (tls.Certificate, error) {

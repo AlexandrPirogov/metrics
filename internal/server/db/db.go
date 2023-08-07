@@ -7,9 +7,10 @@ import (
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel"
 	"memtracker/internal/kernel/tuples"
-	"memtracker/internal/memtrack/metrics"
+	"memtracker/internal/metrics"
 	"memtracker/internal/server/db/journal"
 	"memtracker/internal/server/db/storage/nosql/pidb"
+	"memtracker/internal/server/db/storage/sql/postgres"
 	"sync"
 )
 
@@ -19,9 +20,28 @@ type MetricsStorer interface {
 	Ping() error
 }
 
+var storer MetricsStorer
+
 type DB struct {
 	Storage   MetricsStorer
 	Journaler journal.Journal
+}
+
+func GetStorer() DB {
+	log.Printf("Setting config: %v", server.ServerCfg)
+	if server.ServerCfg.DBUrl != "" {
+		log.Printf("Using postgres as DB")
+		return DB{
+			Storage:   postgres.NewPg(),
+			Journaler: journal.NewJournal(),
+		}
+	}
+
+	log.Printf("Using local ram as DB")
+	return DB{
+		Storage:   MemStorageDB(),
+		Journaler: journal.NewJournal(),
+	}
 }
 
 // initDB initialize map for MemStorage
@@ -59,11 +79,15 @@ func (d *DB) Start() {
 // If metric has type counter DB will contain last value of counter
 func (d *DB) restore(bytes [][]byte) {
 	for _, item := range bytes {
+
 		var metric metrics.Metrics
+		log.Printf("Unmarshaling %s", string(item))
 		if err := json.Unmarshal(item, &metric); err != nil {
+			log.Printf("err while unmarshal %v", err)
 			continue
 		}
 		tuple := metric.ToTuple()
+		log.Printf("Restoring %v", tuple)
 		d.Journaler.Restored[metric.ID] = tuple
 	}
 

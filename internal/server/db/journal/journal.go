@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"log"
+	"sync"
 
 	"memtracker/internal/config/server"
 	"memtracker/internal/kernel/tuples"
@@ -26,6 +27,8 @@ func NewJournal() Journal {
 		ReadInterval: read,
 		Restored:     map[string]tuples.Tupler{},
 		Channel:      make(chan []byte),
+		mux:          sync.Mutex{},
+		rpl:          sync.Mutex{},
 	}
 }
 
@@ -37,6 +40,8 @@ type Journal struct {
 	ReadInterval int
 	Restored     map[string]tuples.Tupler
 	Channel      chan []byte
+	mux          sync.Mutex
+	rpl          sync.Mutex
 }
 
 // Start make journal stats writing data to the given file in json format
@@ -47,7 +52,7 @@ type Journal struct {
 // There are two modes: synch mode writes permanently data to file
 // delayed mode: writes data to the file once at the given period
 // Returns nil if success started otherwise returns error
-func (j Journal) Start() error {
+func (j *Journal) Start() error {
 	file, err := j.openWriteFile()
 	if err != nil {
 		return err
@@ -69,7 +74,10 @@ func (j Journal) Start() error {
 // Pre-cond: given file to write data
 //
 // Post-cond: data written to the file
-func (j Journal) writeDelayed(file *os.File) {
+func (j *Journal) writeDelayed(file *os.File) {
+
+	j.mux.Lock()
+	defer j.mux.Unlock()
 	defer file.Close()
 	writer := bufio.NewWriter(file)
 	read := time.NewTicker(time.Second * time.Duration(j.ReadInterval))
@@ -91,12 +99,16 @@ func (j Journal) writeDelayed(file *os.File) {
 // Pre-cond: given file to write data
 //
 // Post-cond: data written to the file
-func (j Journal) writeSynch(file *os.File) {
+func (j *Journal) writeSynch(file *os.File) {
+
+	j.mux.Lock()
+	defer j.mux.Unlock()
 	defer file.Close()
 	writer := bufio.NewWriter(file)
 	for {
 		if bytes, ok := <-j.Channel; ok {
-			writer.Write(append(bytes, '\n'))
+			bytes = append(bytes, '\n')
+			writer.Write(bytes)
 			writer.Flush()
 		} else {
 			break
@@ -110,7 +122,7 @@ func (j Journal) writeSynch(file *os.File) {
 // Pre-cond:
 //
 // Post-cond: if restore is enabled fill db with data written in given file
-func (j Journal) Restore() ([][]byte, error) {
+func (j *Journal) Restore() ([][]byte, error) {
 	if !j.WithRestore {
 		return [][]byte{}, errors.New("restore is disabled")
 	}
@@ -121,10 +133,12 @@ func (j Journal) Restore() ([][]byte, error) {
 	defer file.Close()
 	bytes := make([][]byte, 0)
 	reader := bufio.NewScanner(file)
-	reader.Split(bufio.ScanLines)
 	for {
 		if reader.Scan() {
-			bytes = append(bytes, reader.Bytes())
+			j.mux.Lock()
+			bytes = append(bytes, []byte(reader.Text()))
+			//
+			j.mux.Unlock()
 		} else {
 			break
 		}
@@ -137,7 +151,7 @@ func (j Journal) Restore() ([][]byte, error) {
 // Pre-cond: given file that can be modified
 //
 // Post-cond: returns pointer to opened file and error
-func (j Journal) openWriteFile() (*os.File, error) {
+func (j *Journal) openWriteFile() (*os.File, error) {
 	file, err := os.OpenFile(j.File, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
 		log.Printf("can't open file %s %v", j.File, err)
@@ -151,7 +165,7 @@ func (j Journal) openWriteFile() (*os.File, error) {
 // Pre-cond: given file that can be read
 //
 // Post-cond: returns pointer to opened file and error
-func (j Journal) openReadFile() (*os.File, error) {
+func (j *Journal) openReadFile() (*os.File, error) {
 	file, err := os.OpenFile(j.File, os.O_RDONLY|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
 		log.Printf("can't open file %s %v", j.File, err)
@@ -160,6 +174,8 @@ func (j Journal) openReadFile() (*os.File, error) {
 	return file, nil
 }
 
-func (j Journal) Write(record []byte) {
+func (j *Journal) Write(record []byte) {
+	j.rpl.Lock()
+	defer j.rpl.Unlock()
 	j.Channel <- record
 }
