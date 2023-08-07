@@ -25,23 +25,10 @@ type RPCServer struct {
 	Storer db.DB
 }
 
-func newRPC() *grpc.Server {
-	if server.ServerCfg.CryptoKey != server.DefaultCryptoKey {
-		creds, err := server.LoadRPCTLSCredentials(server.ServerCfg.CryptoKey)
-		function.ErrFatalCheck("", err)
-		log.Println("Turning TLS...")
-		return grpc.NewServer(
-			grpc.Creds(creds),
-		)
-	}
-
-	return grpc.NewServer()
-}
-
 func (g *RPCServer) ListenAndServe() error {
 	listener, err := net.Listen("tcp", server.ServerCfg.Address)
 	function.ErrFatalCheck("can't start rpc server", err)
-	s := newRPC()
+	s := grpc.NewServer()
 
 	RegisterMetricHandlerServer(s, g)
 	return s.Serve(listener)

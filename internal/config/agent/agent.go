@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"fmt"
 	"log"
 	f "memtracker/internal/function"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc/credentials"
 )
 
 type Interval string
@@ -31,7 +29,6 @@ var (
 var (
 	address        string // agent & server addr
 	cfgFile        string // path to config json file
-	tlscryptokey   string //key file for tls
 	reportInterval string // how often agent will sends metrics to server
 	pollInterval   string // how often agent will updates metrics
 	hash           string // hash for metric
@@ -62,28 +59,6 @@ var (
 		ClientCfg.TransportCfg = &http.Transport{}
 	}
 )
-
-//RPC TLS
-
-func LoadTLSCredentials(keyFile string) (credentials.TransportCredentials, error) {
-	// Load certificate of the CA who signed server's certificate
-	pemServerCA, err := os.ReadFile(keyFile)
-	if err != nil {
-		return nil, err
-	}
-
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(pemServerCA) {
-		return nil, fmt.Errorf("failed to add server CA's certificate")
-	}
-
-	// Create the credentials and return it
-	config := &tls.Config{
-		RootCAs: certPool,
-	}
-
-	return credentials.NewTLS(config), nil
-}
 
 type ClientConfig struct {
 	Address        string   `env:"ADDRESS" envDefault:"localhost:8080" json:"address"`
@@ -116,7 +91,6 @@ func initFlags() {
 	rootClientCmd.PersistentFlags().StringVarP(&pollInterval, "poll", "p", "", "How often metrics are updates. Examples: 0s, 10s, 100s")
 	rootClientCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to server")
 	rootClientCmd.PersistentFlags().IntVarP(&limit, "limit", "l", 1, "rps limit to send requests")
-	rootClientCmd.PersistentFlags().StringVarP(&tlscryptokey, "tls", "t", "", "key file for tls")
 	rootClientCmd.PersistentFlags().BoolVarP(&rpc, "rpc", "s", false, "set true if you want to use rpc")
 
 	err := rootClientCmd.Execute()
@@ -125,7 +99,7 @@ func initFlags() {
 	f.CompareStringsDo(cfgFile, "", func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, "", func() { ClientCfg.Address = address })
 	f.CompareStringsDo(hash, "", func() { ClientCfg.Hash = hash })
-	f.CompareStringsDo(tlscryptokey, "", func() { ClientCfg.CryptoKey = tlscryptokey })
+	f.CompareStringsDo(ClientCfg.CryptoKey, "", func() {})
 
 	f.CompareStringsDoOthewise(pollInterval, "",
 		func() { ClientCfg.PollInterval = Interval(pollInterval) },
@@ -137,11 +111,12 @@ func initFlags() {
 
 	f.CompareIntsDo(limit, 1, func() { ClientCfg.Limit = limit })
 
-	ClientCfg.RPC = rpc
-
-	if !ClientCfg.RPC {
-		f.CompareStringsDoOthewise(cfgFile, "", assignNonTLS, assignTLS)
-		f.CompareStringsDoOthewise(cfgFile, "", func() { ClientCfg.Protocol = "http://" }, func() { ClientCfg.Protocol = "https://" })
+	if rpc {
+		ClientCfg.RPC = true
+	}
+	if !rpc {
+		f.CompareStringsDoOthewise(cfgFile, "", assignTLS, assignNonTLS)
+		f.CompareStringsDoOthewise(cfgFile, "", func() { ClientCfg.Protocol = "https://" }, func() { ClientCfg.Protocol = "http://" })
 	}
 	log.Printf("Agent config: %v", ClientCfg)
 }

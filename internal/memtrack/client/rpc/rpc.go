@@ -28,26 +28,13 @@ type RPCClient struct {
 }
 
 func New() RPCClient {
-	var conn *grpc.ClientConn
-	var err error
-	if agent.ClientCfg.CryptoKey != "" {
-		log.Println("starting tls rpc")
-		creds, err1 := agent.LoadTLSCredentials(agent.ClientCfg.CryptoKey)
-		function.ErrFatalCheck("can't connect via RPC to server: ", err1)
-		conn, err = grpc.Dial(
-			agent.ClientCfg.CryptoKey,
-			grpc.WithTransportCredentials(creds))
-		function.ErrFatalCheck("can't connect via RPC TLS to server: ", err)
-	} else {
-		conn, err = grpc.Dial(agent.ClientCfg.Address)
-		function.ErrFatalCheck("can't connect via RPC to server: ", err)
-	}
+	conn, err := grpc.Dial(agent.ClientCfg.Address, grpc.WithInsecure())
+	function.ErrFatalCheck("can't connect via RPC to server: ", err)
 
 	clientConn := NewMetricHandlerClient(conn)
 
 	ip, _ := gateway.DiscoverGatewayIPv4()
 	md := metadata.Pairs("X-Real-IP", ip.String())
-
 	gctx := metadata.NewOutgoingContext(context.Background(), md)
 	gstream, err := clientConn.UpdateGauges(gctx)
 

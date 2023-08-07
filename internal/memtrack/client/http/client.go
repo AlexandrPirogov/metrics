@@ -34,6 +34,7 @@ type Client struct {
 }
 
 func NewClient() Client {
+	log.Println("Running http client")
 	wrksCnt := agent.ClientCfg.Limit
 
 	c := Client{
@@ -135,7 +136,7 @@ func (c Client) processRequest(r *http.Request) {
 func (c Client) work() {
 
 	url := agent.ClientCfg.Protocol + c.Host + updatesURL
-	log.Println("Sending to ", url)
+
 	for {
 		m, ok := <-c.channel
 		if !ok {
