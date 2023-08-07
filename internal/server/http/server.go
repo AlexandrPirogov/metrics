@@ -3,7 +3,6 @@ package http
 
 import (
 	"context"
-	"log"
 	"memtracker/internal/config/server"
 	"memtracker/internal/server/http/api"
 	"memtracker/internal/server/http/middlewares"
@@ -53,7 +52,6 @@ func BuildHTPP() *metricServer {
 	group(r, h)
 
 	h.DB.Start()
-	log.Println("Running http server...")
 	return &metricServer{
 		&http.Server{
 			Addr:        cfg.Address,

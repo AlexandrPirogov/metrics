@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log"
 	"memtracker/internal/config/server"
 	"memtracker/internal/server/db"
 	"memtracker/internal/server/http"
@@ -13,22 +14,22 @@ type MetricServer interface {
 	Shutdown(context.Context) error
 }
 
-var isRPC map[bool]func() MetricServer = map[bool]func() MetricServer{
-	true:  NewRPC,
-	false: NewMetricServer,
-}
-
 func NewMetricServer() MetricServer {
+	log.Println("Running http server")
 	return http.BuildHTPP()
 }
 
 func NewRPC() MetricServer {
+	log.Println("Running rpc server")
 	return &rpc.RPCServer{
 		Storer: db.GetStorer(),
 	}
 }
 
 func New() MetricServer {
-	server := server.ServerCfg.RPC
-	return isRPC[server]()
+	log.Println("rpc ", server.ServerCfg.RPC)
+	if !server.ServerCfg.RPC {
+		return NewMetricServer()
+	}
+	return NewRPC()
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/caarlos0/env/v7"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/credentials"
 
 	f "memtracker/internal/function"
 )
@@ -41,6 +43,7 @@ var (
 var (
 	address       string // agent & server addr
 	cfgFile       string // path to config json file
+	tlscryptokey  string // tls file
 	dbURL         string // url connection for postgres
 	hash          string // key for hashing
 	storeInterval string // period of replication
@@ -74,6 +77,7 @@ type JournalConfig struct {
 	ReadInterval string `env:"STORE_INTERVAL" envDefault:"300s" json:"store_interval"`
 }
 
+// HTTP TLS
 var (
 	serverNonTLSAssign = func() {
 		ServerCfg.Run = func(serv *http.Server) error {
@@ -89,6 +93,24 @@ var (
 		}
 	}
 )
+
+// RPC TLS
+
+func LoadRPCTLSCredentials(key string) (credentials.TransportCredentials, error) {
+	// Load server's certificate and private key
+	serverCert, err := tls.LoadX509KeyPair("server.pem", key)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the credentials and return it
+	config := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.NoClientCert,
+	}
+
+	return credentials.NewTLS(config), nil
+}
 
 func Exec() {
 	initEnv()
@@ -113,15 +135,14 @@ func initFlags() {
 	rootServerCmd.PersistentFlags().StringVarP(&hash, "key", "k", "", "key for encrypt data that's passes to agent")
 	rootServerCmd.PersistentFlags().StringVarP(&dbURL, "db", "d", "", "database url connection")
 	rootServerCmd.PersistentFlags().StringVarP(&subnet, "subnet", "t", "", "trusted subnet")
+	rootServerCmd.PersistentFlags().StringVarP(&tlscryptokey, "tls", "c", "", "key file for tls")
 	rootServerCmd.PersistentFlags().BoolVarP(&rpc, "rpc", "s", false, "set true if you want to use rpc")
 
 	if err := rootServerCmd.Execute(); err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	if rpc {
-		ServerCfg.RPC = true
-	}
+	ServerCfg.RPC = rpc
 
 	f.CompareStringsDo(cfgFile, DefaultCfgFile, func() { readConfigFile(cfgFile) })
 	f.CompareStringsDo(address, DefaultHost, func() { ServerCfg.Address = address })
@@ -134,12 +155,13 @@ func initFlags() {
 		ServerCfg.DBUrl = dbURL
 	}
 
-	if ServerCfg.CryptoKey == DefaultCryptoKey {
+	if tlscryptokey == DefaultCryptoKey {
 		ServerCfg.Run = func(serv *http.Server) error {
 			log.Println("Running non tls server")
 			return serv.ListenAndServe()
 		}
 	} else {
+		ServerCfg.CryptoKey = tlscryptokey
 		ServerCfg.Run = func(serv *http.Server) error {
 			log.Println("Running tls server")
 			return serv.ListenAndServeTLS("server.pem", ServerCfg.CryptoKey)
